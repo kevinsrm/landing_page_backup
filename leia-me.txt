@@ -1,0 +1,3 @@
+o servidor deve ser hospedado no railway ou render pois a configuração
+é mais facil
+apos subir o servidor você deve criar o banco de dados manualmente

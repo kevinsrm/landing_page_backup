@@ -1,0 +1,362 @@
+<div class="section no-pad-bot blue-grey lighten-5" id="index-banner">
+    <div class="container">
+        <br><br>
+        <h1 class="header center orange-text text-darken-2" style="font-weight: 800;">Solução Incrível para Sua Rotina</h1>
+        <div class="row center">
+            <h5 class="header col s12 light grey-text text-darken-3">Descubra como [Nome do Produto] pode facilitar sua vida com tecnologia de ponta e design exclusivo.</h5>
+        </div>
+        <div class="row center">
+            <a href="#setcheckout" class="btn-large waves-effect waves-light orange darken-2 pulse" style="border-radius: 30px; font-weight: bold;">
+                QUERO O MEU AGORA
+            </a>
+        </div>
+        <div class="row center">
+            <img src="https://down-br.img.susercontent.com/file/cn-11134207-820l4-mib3dkwc232e4a@resize_w1080_nl.webp" alt="Imagem do Produto" class="responsive-img z-depth-2" style="border-radius: 15px;">
+        </div>
+        <br><br>
+    </div>
+</div>
+
+<div class="container">
+    <div class="section">
+        <div class="row">
+            <div class="col s12 m4">
+                <div class="icon-block center">
+                    <h2 class="orange-text"><i class="material-icons">local_shipping</i></h2>
+                    <h5 style="font-weight: 600;">Frete Internacional Grátis</h5>
+                    <p class="light">Receba no conforto da sua casa com rastreamento completo e seguro diretamente dos nossos fornecedores premium.</p>
+                </div>
+            </div>
+
+            <div class="col s12 m4">
+                <div class="icon-block center">
+                    <h2 class="orange-text"><i class="material-icons">verified_user</i></h2>
+                    <h5 style="font-weight: 600;">Garantia Total</h5>
+                    <p class="light">Não gostou? Nós devolvemos seu dinheiro. Sua satisfação é nossa prioridade número um em todas as compras.</p>
+                </div>
+            </div>
+
+            <div class="col s12 m4">
+                <div class="icon-block center">
+                    <h2 class="orange-text"><i class="material-icons">flash_on</i></h2>
+                    <h5 style="font-weight: 600;">Qualidade Premium</h5>
+                    <p class="light">Selecionamos apenas produtos testados e aprovados pelos melhores especialistas do mercado global.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grey lighten-4" style="padding: 40px 0;">
+    <div class="container">
+        <h4 class="center-align" style="margin-bottom: 40px;">O que nossos clientes dizem</h4>
+        <div class="row">
+            <div class="col s12 m6">
+                <div class="card-panel white z-depth-1">
+                    <p class="italic">"Chegou antes do prazo e a qualidade me surpreendeu positivamente. Valeu cada centavo!"</p>
+                    <span class="black-text"><strong>- João Silva</strong></span>
+                </div>
+            </div>
+            <div class="col s12 m6">
+                <div class="card-panel white z-depth-1">
+                    <p class="italic">"Excelente suporte ao cliente. Tive uma dúvida sobre o rastreio e me responderam na hora."</p>
+                    <span class="black-text"><strong>- Maria Oliveira</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="comprar" class="section center container" style="padding: 60px 0;">
+    <h3 class="orange-text text-darken-2">Oferta Exclusiva por Tempo Limitado</h3>
+    <p class="flow-text">De <strike>R$ 197,00</strike> por apenas <strong>R$ 97,00</strong></p>
+    <a id="setcheckout" href="#form-checkout" class="btn-large waves-effect waves-light green accent-4 modal-trigger scrollspy" style="font-size: 1.5rem; height: 70px; line-height: 70px; border-radius: 10px;">
+        COMPRAR AGORA <i class="material-icons right">shopping_cart</i>
+    </a>
+    <p class="grey-text" style="margin-top: 20px;"><i class="material-icons tiny">lock</i> Pagamento 100% seguro via Mercado Pago</p>
+</div>
+
+
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+
+
+
+
+<div id="walletBrick_container"></div>
+
+
+
+<div id="form-checkout" class="row hide container modal" style="display: none; margin-top: 40px;">
+  <form action="/create-preference" method="POST" class="col s12 white z-depth-2" style="padding: 30px; border-radius: 15px;">
+    
+    <h5 class="center-align orange-text text-darken-2" style="margin-bottom: 30px; font-weight: 600;">
+      Preencha seus dados para finalizar
+    </h5>
+
+    <div class="row">
+      <div class="input-field col s12 m6">
+	<label for="nome" class="active">Nome completo</label>
+        <input id="nome" name="nome" type="text" required>
+      </div>
+
+      <div class="input-field col s12 m6">
+	<label for="email">Email</label>
+        <input id="email" name="email" type="email" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m6">
+	<label for="cpf">CPF</label>
+        <input id="cpf" name="cpf" type="text" maxlength="12" required>
+      </div>
+
+      <div class="input-field col s12 m6">
+	<label for="telefone">Telefone</label>
+        <input id="telefone" name="telefone" type="text" maxlength="15" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m4">
+	<label for="cep">CEP</label>
+        <input id="cep" name="cep" type="text" maxlength="8" required>
+      </div>
+
+      <div class="input-field col s12 m8">
+	<label for="endereco">Endereço</label>
+        <input id="endereco" name="endereco" type="text" required>
+      </div>
+
+      <div class="input-field col s12 m4">
+	<label for="numero">Número</label>
+        <input id="numero" name="numero" type="text" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m6">
+	<label for="bairro">Bairro</label>
+        <input id="bairro" name="bairro" type="text" required>
+      </div>
+
+      <div class="input-field col s12 m6">
+	<label for="complemento">Complemento (opcional)</label>
+        <input id="complemento" name="complemento" type="text">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="input-field col s12 m5">
+	<label for="cidade">Cidade</label>
+        <input id="cidade" name="cidade" type="text" required>
+      </div>
+
+      <div class="input-field col s12 m3">
+	<label for="estado">Estado (UF)</label>
+        <input id="estado" name="estado" type="text" maxlength="2" required>
+      </div>
+
+    </div>
+
+    <div class="row center" style="margin-top: 30px;">
+      <button id="finalizar" type="submit" class="btn-large waves-effect waves-light green accent-4" style="width: 100%; border-radius: 10px; font-size: 1.3rem;">
+        FINALIZAR COMPRA <i class="material-icons right">lock</i>
+      </button>
+    </div>
+
+    <p class="center grey-text" style="margin-top: 15px;">
+      <i class="material-icons tiny">lock</i> Seus dados estão seguros
+    </p>
+
+  </form>
+</div>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializa animações de scroll suave (opcional)
+        var scrollspy = document.querySelectorAll('.scrollspy');
+	M.ScrollSpy.init(scrollspy);
+	
+	var modal = document.querySelectorAll('.modal');
+        M.Modal.init(modal);
+    });
+
+
+    document.getElementById("setcheckout").addEventListener("click", (e) => {
+    e.preventDefault();
+    const form = document.getElementById("form-checkout");
+    form.classList.remove("hide");
+    form.style.display = "block";
+});
+
+    document.querySelector("form").addEventListener("submit", () => {
+    const finalizar = document.getElementById("finalizar");
+    finalizar.innerText = "PROCESSANDO...";
+    finalizar.classList.add("disabled");
+});
+document.getElementById("cpf").addEventListener("input", (e) => {
+    let value = e.target.value;
+
+    // 1. Remove tudo que não for número
+    value = value.replace(/\D/g, "");
+
+    // 2. Limita a 11 dígitos (tamanho padrão do CPF)
+    value = value.substring(0, 11);
+
+    // 3. Aplica a máscara: 000000000-00
+    // O regex abaixo pega os primeiros 9 dígitos e separa os 2 últimos com um traço
+    value = value.replace(/^(\d{9})(\d)/, "$1-$2");
+
+    // 4. Atualiza o valor do campo
+    e.target.value = value;
+});
+document.getElementById("telefone").addEventListener("input", (e) => {
+    let value = e.target.value;
+
+    // 1. Remove tudo que não for número
+    value = value.replace(/\D/g, "");
+
+    // 2. Limita a 11 dígitos
+    value = value.substring(0, 11);
+
+    // 3. Aplica a máscara dinamicamente
+    if (value.length > 10) {
+        // Celular: (00) 00000-0000
+        value = value.replace(/^(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+    } else if (value.length > 6) {
+        // Fixo ou Celular em digitação: (00) 0000-0000
+        value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+    } else if (value.length > 2) {
+        // Apenas o DDD: (00) 0...
+        value = value.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+    } else if (value.length > 0) {
+        // Iniciando o DDD: (0...
+        value = value.replace(/^(\d*)/, "($1");
+    }
+
+    e.target.value = value;
+});
+
+document.getElementById("email").addEventListener("blur", function(e) {
+    const email = e.target.value.trim().toLowerCase();
+    
+    // 1. Regex Robusta: Garante estrutura e proíbe caracteres especiais/duplos arrobas
+    // Aceita letras, números, pontos e hífens antes do @
+    const regexEstrutura = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+    // 2. Lista de Domínios Permitidos (White Label)
+    const dominiosPermitidos = ['gmail.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'yahoo.com', 'msn.com'];
+
+    if (email.length > 0) {
+        const dominioDigitado = email.split('@')[1];
+
+        // Validação de dois níveis: Estrutura + Domínio Específico
+        if (!regexEstrutura.test(email) || !dominiosPermitidos.includes(dominioDigitado)) {
+            
+            M.toast({
+                html: '<span><i class="material-icons left">error</i> Use um e-mail válido (Gmail, Outlook, etc).</span>',
+                classes: 'red darken-2 rounded',
+                displayLength: 4000
+            });
+
+            // Opcional: Marcar o input visualmente (Classe do Materialize)
+            e.target.classList.add("invalid");
+        } else {
+            e.target.classList.remove("invalid");
+            e.target.classList.add("valid");
+        }
+    }
+});
+
+
+let cep = document.getElementById("cep");
+let in_endereco = document.getElementById("endereco");
+let in_bairro = document.getElementById("bairro");
+let in_cidade = document.getElementById("cidade");
+let in_estado = document.getElementById("estado");
+
+
+cep.addEventListener("change", async ()=>{
+    try{
+        let response = await fetch(`https://viacep.com.br/ws/${cep.value}/json`);
+        let data = await response.json();
+	let body = JSON.stringify(data);
+	let error = JSON.parse(body);
+	
+	let endereco1 = JSON.parse(body);
+        let bairro1 = JSON.parse(body);
+        let cidade1 = JSON.parse(body);
+        let estadoUf = JSON.parse(body);
+
+        if(error.erro){
+	    M.toast({
+  html: 'Insira um cep válido!',
+  displayLength: 7000, // Tempo em milissegundos
+  classes: 'rounded'
+});;
+	in_endereco.value = "";
+	in_bairro.value = "";
+	in_cidade.value = "";
+	in_estado.value = "";
+	}
+	else{
+	   
+	   in_endereco.value = endereco1.logradouro;
+	   in_bairro.value = bairro1.bairro;
+	   in_cidade.value = cidade1.localidade;
+	   in_estado.value = estadoUf.estado;
+	}
+    }
+    catch(error){
+	M.toast({
+  html: 'Insira um cep válido!',
+  displayLength: 7000, // Tempo em milissegundos
+  classes: 'rounded'
+});;
+    }
+})
+</script>
+
+<!--
+<script>
+//essa é a public key que usei como o gemini me mandou
+    //const mp = new MercadoPago("APP_USR-6277e7d2-5d69-4c57-8cb7-73069aa43cdc");
+    const form = document.getElementById("form-checkout");    
+    const finalizar = document.getElementById("finalizar");
+
+    document.getElementById("setcheckout").addEventListener("click", async (e) => {
+        e.preventDefault(); // Impede o link de recarregar a página
+        form.classList.remove("hide");
+        const btn = e.target;
+        btn.innerText = "PROCESSANDO...";
+        btn.classList.add("disabled");
+        
+        finalizar.innerText = "PROCESSANDO...";
+        finalizar.classList.add("disabled");
+        setTimeout(()=>{
+          form.classList.add("hide");
+        }, 2000)
+        try {
+            // 1. Chama sua rota do backend
+            //const response = await fetch('/create-preference');
+            //const data = await response.json();
+
+            //if (data.preference_id) {
+                // 2. Redireciona direto para o checkout do Mercado Pago
+                // Essa é a forma mais rápida para landing pages de conversão
+               // window.location.href = data.preference_url;
+            //} else {
+                //alert("Erro ao gerar pagamento.");
+                //btn.innerText = "FINALIZAR COMPRA";
+                //btn.classList.remove("disabled");
+            }
+        } catch (error) {
+            //console.error("Erro:", error);
+            //alert("Erro de conexão.");
+        }
+    });
+</script>
+-->
