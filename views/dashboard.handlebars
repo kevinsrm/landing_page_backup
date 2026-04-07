@@ -1,0 +1,661 @@
+
+
+<header style="margin-top:-20px !important;">
+        <nav class="blue darken-3">
+            <div class="nav-wrapper">
+                <div class="container">
+                    <a href="#" class="brand-logo">Meu Admin</a>
+                    <a href="#" data-target="slide-out" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <div class="isNewProductPage">
+
+    <ul id="slide-out" class="sidenav sidenav-fixed">
+        <li>
+            <div class="user-view">
+                <div class="background">
+                    <img src="https://materializecss.com/images/office.jpg">
+                </div>
+                <a href="#user"><img class="circle" src="https://materializecss.com/images/yuna.jpg"></a>
+                <a href="#name"><span class="white-text name">John Doe</span></a>
+                <a href="#email"><span class="white-text email">jdandturk@gmail.com</span></a>
+            </div>
+        </li>
+        <li><a class="el" data-target="box-dashboard" href="#!"><i class="material-icons">dashboard</i>Dashboard</a></li>
+<li><a class="el" data-target="box-vendas" href="#!"><i class="material-icons">shopping_cart</i>Vendas</a></li>
+<li><div class="divider"></div></li>
+<li><a class="subheader">Relatórios</a></li>
+<li><a class="el" data-target="box-credenciais" href="#!">Página</a></li>
+
+    </ul>
+
+    <main id="dashboard" style="width: 100% !important">
+        <div id="box-dashboard" class="content-box">
+            <div class="row" style="width: 100% !important">
+                <div class="col s12" style="width: 100% !important">
+                    <h3 style="text-shadow: 0 0 5px black" class="white-text light">Bem-vindo ao Dashboard</h3>
+                        
+  <!-- Prepare a DOM with a defined width and height for ECharts -->
+  <div class="" id="chart-container" style="width: 100% !important; height: 300px"></div>
+
+                        
+                    
+                </div>
+            </div>
+        </div>
+        
+        <!--vendas-->
+        
+         <div id="box-vendas" class="content-box hide">
+            <div class="row" style="width: 100% !important">
+                <div class="col s12" style="width: 100% !important">
+                    <h3 style="text-shadow: 0 0 5px black" class="white-text light">Aqui você pode gerenciar suas vendas</h3>
+ 
+ <!--table com vendas -->
+ <div class="row">
+    <div class="col s12">
+      <ul class="tabs">
+        <li class="tab col s3"><a class="active" href="#test1">aprovado</a></li>
+        <li class="tab col s3"><a href="#test2">falha</a></li>
+        <li class="tab col s3"><a href="#test3">pendente</a></li>
+      </ul>
+    </div>
+    
+    <!--dados vendas aprovadas-->
+    <div id="test1" class="col s12 aprovado">
+    <table style="" class="highlight responsive-table striped">
+        <thead style="">
+            <tr style="height: 300px; display: flex; justify-content: space-around; flex-direction: column">
+                <th>Cliente / Contato</th>
+                <th>Documento</th>
+                <th>Endereço Completo</th>
+                <th style="">Ação de Rastreio</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {{#each pedidos}}
+            <tr>
+                <!-- Dados do Cliente -->
+                <td>
+                    <span style="font-weight: bold; display: block;">{{this.nome}}</span>
+                    <span class="grey-text" style="font-size: 0.9rem;">{{this.email}}</span><br>
+                    <span class="grey-text" style="font-size: 0.9rem;">{{this.telefone}}</span>
+                </td>
+
+                <!-- Documento -->
+                <td>{{this.cpf}}</td>
+
+                <!-- Endereço Compactado -->
+                <td>
+                    {{this.endereco}}, {{this.numero}}<br>
+                    {{this.bairro}} - {{this.cidade}}/{{this.estado}}<br>
+                    <small class="grey-text">CEP: {{this.cep}} {{#if this.complemento}}| {{this.complemento}}{{/if}}</small>
+                </td>
+
+                <!-- Lógica de Envio de Rastreio -->
+                <td>
+                    <form action="/enviar-rastreio" method="POST" class="row" style="margin-bottom: 0;">
+                        <input type="hidden" name="pedidoId" value="{{this.id}}">
+                        <div class="input-field col s8" style="margin: 0;">
+                            <input placeholder="código de rastreio" id="codigo_{{this.id}}" type="text" name="codigo" {{#if this.codigo_rastreio }}disabled {{/if}} class="validate" required>
+                            <label for="codigo_{{this.id}}"></label>
+                        </div>
+                        <div class="col s4" style="padding-top: 10px;">
+                            <button type="submit" class="btn-floating btn-small {{#if this.codigo_rastreio}}grey disabled{{else}}green{{/if}} green waves-effect waves-light">
+                                <i class="material-icons {{#if this.codigo_rastreio}}check{{else}}send{{/if}}">send</i>
+                            </button>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
+
+    
+    <!-- dados vendas falhas-->
+    <div id="test2" class="col s12">
+    <table class="responsive-table striped">
+        <thead style="">
+            <tr style="height: 300px; display: flex; justify-content: space-around; flex-direction: column">
+                <th style="text-align: left">Cliente / Contato</th>
+                <th>Documento</th>
+                <th>Endereço Completo</th>
+                <th style="">Recuperar venda</th>
+            </tr>
+        </thead>
+
+        <tbody>
+          {{#each pedidos_falha}}
+            <tr>
+                <!-- Dados do Cliente -->
+                <td>
+                <!--nome-->
+                    <span style="font-weight: bold; display: block;">{{this.nome}}</span>
+                    
+                    <!--email-->
+                    <span class="grey-text" style="font-size: 0.9rem;">{{this.email}}</span><br>
+                    <!--telefone-->
+                    <span class="grey-text" style="font-size: 0.9rem;">{{this.telefone}}</span>
+                </td>
+
+                <!-- Documento cpf -->
+                <td>{{this.cpf}}</td>
+
+                <!-- Endereço Compactado -->
+                <td>
+                    {{this.endereco}}, {{this.numero}}<br>
+                    {{this.bairro}} - {{this.cidade}}/{{this.estado}}<br>
+                    <small class="grey-text">CEP: {{this.cep}} {{#if this.complemento}}| {{this.complemento}}{{/if}}</small>
+                </td>
+
+                <!-- Lógica de Envio de Rastreio -->
+                <td>
+                    <form action="/enviar-email-rv" method="POST" class="row" style="margin-bottom: 0;">
+                        <input type="hidden" name="pedidoId" value="{{this.id}}">
+                        <!--
+                        <div class="input-field col s8" style="margin: 0;">
+                        
+                            <input placeholder="código de rastreio" id="codigo_{{this.id}}" type="text" name="codigo" {{#if this.codigo_rastreio }}disabled {{/if}} class="validate" required>
+                            <label for="codigo_{{this.id}}"></label>
+                        </div>
+                        -->
+                     <div class="col s4" style="padding-top: 10px;">
+    {{#if (and (eq this.status_pagamento "rejected") (not this.email_falha))}}
+        {{!-- Botão Verde: Aparece apenas se for rejeitado E não enviado --}}
+        <button type="submit" class="btn-floating btn-small green waves-effect waves-light">
+            <i class="material-icons">send</i>
+        </button>
+    {{else}}
+        {{!-- Botão Cinza: Se já foi enviado ou se o status não é rejected --}}
+        <button type="submit" class="btn-floating btn-small grey disabled">
+            <i class="material-icons">check</i>
+        </button>
+    {{/if}}
+</div>
+
+
+                    </form>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+      </table>
+    </div>
+    
+    
+    <!--compras pendentes-->
+    <div id="test3" class="col s12">
+    <table class="responsive-table striped">
+        <thead style="">
+            <tr style="height: 300px; display: flex; justify-content: space-around; flex-direction: column">
+                <th style="text-align: left">Cliente / Contato</th>
+                <th>Documento</th>
+                <th>Endereço Completo</th>
+                <th style="">Recuperar venda</th>
+            </tr>
+        </thead>
+
+         
+        <tbody>
+          {{#each pedidos_pendentes}}
+            <tr>
+                <!-- Dados do Cliente -->
+                <td>
+                <!--nome-->
+                    <span style="font-weight: bold; display: block;">{{this.nome}}</span>
+                    
+                    <!--email-->
+                    <span class="grey-text" style="font-size: 0.9rem;">{{this.email}}</span><br>
+                    <!--telefone-->
+                    <span class="grey-text" style="font-size: 0.9rem;">{{this.telefone}}</span>
+                </td>
+
+                <!-- Documento cpf -->
+                <td>{{this.cpf}}</td>
+
+                <!-- Endereço Compactado -->
+                <td>
+                    {{this.endereco}}, {{this.numero}}<br>
+                    {{this.bairro}} - {{this.cidade}}/{{this.estado}}<br>
+                    <small class="grey-text">CEP: {{this.cep}} {{#if this.complemento}}| {{this.complemento}}{{/if}}</small>
+                </td>
+
+                <!-- Lógica de Envio de Rastreio -->
+                <td>
+                    <form action="/enviar-email-rc" method="POST" class="row" style="margin-bottom: 0;">
+                        <input type="hidden" name="pedidoId" value="{{this.id}}">
+                        
+                     <div class="col s4" style="padding-top: 10px;">
+    {{#if (and (eq this.status_pagamento "pending") (not this.email_pendente))}}
+        {{!-- Botão Verde: Aparece apenas se for rejeitado E não enviado --}}
+        <button type="submit" class="btn-floating btn-small green waves-effect waves-light">
+            <i class="material-icons">send</i>
+        </button>
+    {{else}}
+        {{!-- Botão Cinza: Se já foi enviado ou se o status não é rejected --}}
+        <button type="submit" class="btn-floating btn-small grey disabled">
+            <i class="material-icons">check</i>
+        </button>
+    {{/if}}
+</div>
+
+
+                    </form>
+                </td>
+            </tr>
+            {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+ 
+ 
+            
+
+                        
+                    
+                </div>
+            </div>
+        </div>
+        
+        <!--editar home-->
+        
+        <div id="box-credenciais" class="content-box hide">
+            <div class="row" style="width: 100% !important">
+                <div style="display: flex; justify-content: center; align-items: center; flex-direction: column" class="col s12" style="width: 100% !important">
+                    <h3 style="text-shadow: 0 0 5px black" class="white-text light">Aqui você pode editar sua landing page</h3>
+                    
+                    
+                 
+                 
+                 
+                 <!--glass panel-->
+                <div style="margin: 5% !important" class="row container glass-panel">
+    <form method="post" action="/validateupload" class="col s12 containerrow" enctype="multipart/form-data">
+      <div class="row">
+      
+      
+      
+        <div class="input-field col s6">
+          <input id="preco_sem_desconto" type="text" class="validate" name="preco_sem_desconto">
+          <label style="text-shadow: 0 0 5px black" class="white-text" for="preco">preço sem desconto Ex: 150</label>
+        </div>
+        
+        
+        
+        <div class="input-field col s6">
+        <input type="hidden" name="id" value="1">
+          <input id="preco" type="text" class="validate">
+          <input id="valorLimpo" style="display: none" type="text" name="preco">
+          <label style="text-shadow: 0 0 5px black" class="white-text" for="preco">preço Ex: 100</label>
+        </div>
+        
+        
+        
+        
+          <!--substituir por um select-->
+          <ul class="collapsible transparent" data-collapsible="accordion">
+    <li>
+      <div style="text-shadow: 0 0 5px black" class="collapsible-header transparent white-text"><i class="material-icons">grid_view</i>Faça a descrição do produto</div>
+      <div class="collapsible-body">
+		<p style="text-shadow: 0 0 5px black" class="white-text">
+        descrição exemplo:
+        
+        
+        Smartphone Premium X1
+Eleve sua experiência com tecnologia de ponta e design elegante. Este dispositivo oferece performance ultra-rápida, câmera de alta resolução e bateria de longa duração para acompanhar seu ritmo.
+Processador: Octa-core 3.2GHz
+Memória: 8GB RAM / 256GB Armazenamento
+Tela: 6.7" AMOLED 120Hz
+Cor: Preto Espacial
+        </p>
+     
+  
+  </div>
+  <div class="input-field col s12">
+      <textarea id="descricao" type="textarea" maxlength="800" class="materialize-textarea" name="descricao"></textarea>
+      <label style="text-shadow: 0 0 5px black" class="white-text" for="descricao">descrição (300 caracteres)</label>
+    </div>
+      
+    </li>
+    
+    </ul>
+    
+    
+    
+    <div style="display: flex !important; flex-direction: column !important" class="input-field col s12">
+    <!--
+    <input style="opacity:0; position:absolute; z-index:-1;" id="upload" type="file" name="imagens" accept="image/*" multiple>
+    -->
+      <input style="display:none" id="upload" type="file" name="imagens" max="4" accept="image/*" onchange="lll(event)" multiple>
+      
+      
+      <label class="waves-effect waves-light" style="border: 2px dashed lightblue; padding: 20px; display: flex; flex-direction: row" for="upload"><span class="light blue-text">insira sua imagem</span><i class="material-icons blue-text">upload</i></label>
+      
+      
+    </div>
+    <div class="input-field col s12" style="margin-top: 105px !important" id="preview"></div>
+
+        
+        <div style="margin-top: 90px" class="input-field col s12">
+          <button class="btn-large btn-float blue waves-effect waves-light" id="last_name" type="submit" class="validate">enviar</button>
+        </div>
+      </div>
+      
+    </form>
+  </div> 
+  {{#if status}} 
+  <script>
+    // Aguarda o DOM carregar para garantir que o Materialize já esteja pronto
+    document.addEventListener('DOMContentLoaded', function() {
+      M.toast({
+        html: 'O produto foi atualizado!',
+        displayLength: 9000,
+        classes: 'rounded green'
+      });
+    });
+  </script>
+{{/if}}
+
+  
+  
+  <!--apagar conforme necessário-->
+   <script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ===== MATERIALIZE INIT =====
+    M.Sidenav.init(document.querySelectorAll('.sidenav'));
+    M.FormSelect.init(document.querySelectorAll("select"));
+    M.Collapsible.init(document.querySelectorAll(".collapsible"));
+    M.Tabs.init(document.querySelectorAll(".tabs"));
+
+    // ===== PREÇO =====
+    const inputPreco = document.getElementById("preco");
+    const inputHidden = document.getElementById("valorLimpo");
+
+    const formatadorReal = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 2
+    });
+
+    inputPreco.addEventListener("input", function () {
+        let valorLimpo = this.value.replace(/\D/g, "");
+        let valorDecimal = parseFloat(valorLimpo) / 100;
+
+        if (isNaN(valorDecimal)) {
+            this.value = "";
+            inputHidden.value = "";
+            return;
+        }
+
+        const formatado = formatadorReal.format(valorDecimal);
+        this.value = formatado;
+
+        inputHidden.value = formatado
+            .replace("R$", "")
+            .replace(/\./g, "")
+            .replace(",", ".")
+            .trim();
+    });
+
+    // ===== PREVIEW IMAGENS =====
+    let listaArquivosGlobal = [];
+
+    window.lll = function(e) {
+        const input = e.target;
+        if (!input.files) return;
+
+        const novosArquivos = Array.from(input.files);
+
+        if (listaArquivosGlobal.length + novosArquivos.length > 4) {
+            M.toast({
+                html: 'Máximo 4 imagens!',
+                classes: 'red'
+            });
+
+            const vagas = 4 - listaArquivosGlobal.length;
+            listaArquivosGlobal = [
+                ...listaArquivosGlobal,
+                ...novosArquivos.slice(0, vagas)
+            ];
+        } else {
+            listaArquivosGlobal = [
+                ...listaArquivosGlobal,
+                ...novosArquivos
+            ];
+        }
+
+        renderizarPreview();
+        input.value = "";
+    };
+
+    function renderizarPreview() {
+        const preview = document.getElementById("preview");
+        preview.innerHTML = "";
+
+        preview.style.display = "flex";
+        preview.style.gap = "10px";
+        preview.style.flexWrap = "wrap";
+
+        listaArquivosGlobal.forEach((arquivo, index) => {
+            const url = URL.createObjectURL(arquivo);
+
+            const container = document.createElement("div");
+            container.style.position = "relative";
+            container.style.width = "70px";
+            container.style.height = "70px";
+
+            const img = document.createElement("img");
+            img.src = url;
+            img.style.width = "100%";
+            img.style.height = "100%";
+            img.style.objectFit = "cover";
+            img.style.borderRadius = "4px";
+
+            const btn = document.createElement("button");
+            btn.innerHTML = "×";
+            btn.style.cssText = `
+                position:absolute;
+                top:-5px;
+                right:-5px;
+                background:red;
+                color:white;
+                border:none;
+                border-radius:50%;
+                width:20px;
+                height:20px;
+                cursor:pointer;
+            `;
+
+            btn.onclick = () => {
+                listaArquivosGlobal.splice(index, 1);
+                renderizarPreview();
+            };
+
+            container.appendChild(img);
+            container.appendChild(btn);
+            preview.appendChild(container);
+        });
+    }
+
+    // ===== SINCRONIZA ANTES DO SUBMIT =====
+    document.querySelector("form[action='/validateupload']")
+    .addEventListener("submit", function () {
+        const input = document.getElementById("upload");
+        const dt = new DataTransfer();
+
+        listaArquivosGlobal.forEach(file => dt.items.add(file));
+        input.files = dt.files;
+    });
+
+});
+</script>                 
+                    
+                        
+  
+                        
+                    
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    </div>
+    
+    <script type="text/javascript">
+      let btn_dashboard = document.getElementById("btn-dashboard");
+      let btn_vendas = document.getElementById("btn-vendas");
+      let dashboard = document.getElementById("dashboard");
+      let vendas = document.getElementById("vendas");
+      let content = document.querySelectorAll(".content-box");
+      let buttons = document.querySelectorAll(".el");
+      
+buttons.forEach(function(item, index) {
+    item.addEventListener("click", (e) => {
+        
+        // 1. Resetar o estado: Remove o azul de todos os botões
+        buttons.forEach(btn => btn.classList.remove("blue"));
+        
+        // 2. Esconder todos os blocos de conteúdo
+        content.forEach(box => box.classList.add("hide"));
+
+        // 3. Ativar o que foi clicado
+        item.classList.add("blue");
+        
+        // 4. Mostrar o conteúdo que tem o MESMO INDEX do botão
+        if (content[index]) {
+            content[index].classList.remove("hide");
+        }
+    });
+});
+
+    </script>
+    
+    
+    <script type="text/javascript">
+    var dom = document.getElementById('chart-container');
+var myChart = echarts.init(dom, null, {
+  renderer: 'canvas',
+  useDirtyRect: false
+});
+var app = {};
+
+// 1. Gera o array com as datas dos últimos 7 dias (YYYY-MM-DD)
+const ultimos7Dias = [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    // Formata como 2026-03-31 sem erro de fuso
+    return d.toLocaleDateString('sv-SE'); 
+});
+
+// 2. Simulando o que o seu SELECT COUNT retornaria do banco
+/*
+SELECT 
+    DATE(data_pedido) AS data, 
+    COUNT(*) AS total 
+FROM pedidos 
+WHERE status_pagamento = 'approved' 
+  AND data_pedido >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+GROUP BY DATE(data_pedido)
+ORDER BY data_pedido ASC;
+*/
+const dadosDoBanco = {{{dados}}};
+
+// 3. Monta o array final para o Apache ECharts
+const dataFinalEcharts = ultimos7Dias.map(dia => {
+    const registro = dadosDoBanco.find(item => item.data === dia);
+    
+    // Se o registro existir no banco, usa o total, senão coloca 0
+    return [dia, registro ? registro.total : 0];
+});
+
+var option;
+
+option = {
+  xAxis: {
+    type: 'category',
+    boundaryGap: false
+  },
+  yAxis: {
+    type: 'value',
+    boundaryGap: [0, '30%']
+  },
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'line' // 'line' fica melhor visualmente para gráficos de área/linha
+    },
+    showDelay: 0,
+    hideDelay: 100,
+    transitionDuration: 0.4,
+    confine: true // Importante para mobile não cortar o balão
+  },
+  dataZoom: [
+    {
+      type: 'inside',
+      start: 0,
+      end: 100
+    }
+  ],
+  visualMap: {
+    type: 'piecewise',
+    show: false,
+    dimension: 0,
+    seriesIndex: 0,
+    pieces: [
+      {
+        gt: 1,
+        lt: 3,
+        color: 'rgba(0, 0, 180, 0.4)'
+      },
+      {
+        gt: 5,
+        lt: 7,
+        color: 'rgba(0, 0, 180, 0.4)'
+      }
+    ]
+  },
+  series: [
+    {
+      type: 'line',
+      smooth: 0.6,
+      symbol: 'none',
+      lineStyle: {
+        color: '#5470C6',
+        width: 5
+      },
+      markLine: {
+        symbol: ['none', 'none'],
+        label: { show: false },
+        data: [{ xAxis: 1 }, { xAxis: 3 }, { xAxis: 5 }, { xAxis: 7 }]
+      },
+      areaStyle: {},
+      // AQUI ESTÁ A MUDANÇA: Passamos o array completo que já está no formato [data, valor]
+      data: dataFinalEcharts 
+    }
+  ]
+};
+
+if (option && typeof option === 'object') {
+  myChart.setOption(option);
+}
+
+window.addEventListener('resize', myChart.resize);
+
+    </script>
+    
+    <script>
+    document.addEventListener("DOMContentLoaded", () =>{
+        let sidenav = document.querySelectorAll(".sidenav");
+        let tabs = document.querySelectorAll(".tabs");
+        M.Sidenav.init(sidenav);
+        M.Tabs.init(tabs);
+    })
+    </script>

@@ -8,15 +8,21 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
+    "crypto": "^1.0.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-handlebars": "^8.0.6",
     "fs": "^0.0.1-security",
     "mercadopago": "^2.12.0",
+    "multer": "^2.1.1",
     "mysql2": "^3.20.0",
     "nodemailer": "^8.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

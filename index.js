@@ -2,13 +2,58 @@ import express from "express";
 import {engine} from "express-handlebars";
 import { randomUUID } from 'node:crypto';
 import dotenv from 'dotenv';
+import crypto from "crypto";
+import multer from "multer";
+import fs from "fs";
 dotenv.config();
+import path from 'path';
 const app = express();
+
+
+
 const port = process.env.PORT || 3000;
 const access_token = process.env.ACCESS_TOKEN;
+
+//preciso tornar o nome das imagens em uma variavel global pra usar na rota validate upload e salvar no banco de dados
+/*
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads')
+  },
+  filename: function (req, file, cb) {
+    const uniqueid = crypto.randomUUID();
+    cb(null, file.fieldname + '-' + uniqueid + file.originalname)
+  }
+})
+const upload = multer({ storage: storage });
+*/
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads');
+  },
+  filename: function (req, file, cb) {
+    const uniqueid = crypto.randomUUID();
+    const nomeArquivo = file.fieldname + '-' + uniqueid + file.originalname;
+
+    // salva no req (seguro por requisição)
+    if (!req.nomesImagens) {
+      req.nomesImagens = [];
+    }
+
+    req.nomesImagens.push(nomeArquivo);
+
+    cb(null, nomeArquivo);
+  }
+});
+
+const upload = multer({ storage: storage });
+
 // database.js
 import mysql from 'mysql2';
-
+app.use(express.static('public'));
+app.get("/testando", (req, res)=>{
+    res.send("funcionando");
+})
 // Configure and create the pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -125,9 +170,14 @@ preference.create({
       }
     ],
      external_reference: `${meuPedidoId}#${emailUser}`,
+     payment_methods: {
+        excluded_payment_types: [],
+        excluded_payment_methods: [],
+        installments: 12
+    },
       shipments: {
   mode: 'not_specified',
-  cost: 50, // Custo fixo que você definiu
+  cost: process.env.FRETE, // Custo fixo que você definiu
 },
    back_urls: {
                 success: `${process.env.SITE_URL}/success`, // Altere para sua URL >
@@ -153,13 +203,35 @@ res.status(500).json({"error": "erro ao criar preference"})
 })
 
 
-app.engine('handlebars', engine());
+app.engine('handlebars', engine({
+    helpers: {
+        // Compara se são iguais
+        eq: (v1, v2) => v1 === v2,
+        
+        // Inverte o valor booleano (resolve o erro "missing helper not")
+        not: (v) => !v,
+        
+        // Verifica se as duas condições são verdadeiras
+        and: (v1, v2) => v1 && v2,
+        
+        // Exemplo extra: Diferente de
+        ne: (v1, v2) => v1 !== v2
+    }
+}));
+
 app.set('view engine', 'handlebars');
 app.set('views', 'views') ;
 
-app.get("/", (req,res)=>{
-
-res.render("home");
+app.get("/", async (req,res)=>{
+try{
+    let sql = "SELECT caminho1, caminho2, caminho3, caminho4 FROM imagens WHERE id = 1";
+    
+    let [rows] = await pool.promise().query(sql)
+res.render("home", {imagem: rows[0]});
+}
+catch(err){
+    console.log("ocorreu um erro na rota / : " + err.message);
+}
 })
 
 app.get("/success", async (req, res)=>{
@@ -289,7 +361,345 @@ app.post("/checkout",(req,res)=>{
 res.redirect("/")
 })
 
+app.get("/dash", async (req, res) => {
+    // Query correta usando DATE_FORMAT para evitar problemas de fuso horário no JS
+    const query = "SELECT DATE_FORMAT(data_pedido, '%Y-%m-%d') AS data, COUNT(*) AS total FROM pedidos WHERE status_pagamento = 'approved' AND data_pedido >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(data_pedido) ORDER BY data_pedido ASC;";
+    
+    const query2 = "SELECT * FROM pedidos WHERE status_pagamento = 'approved'";
+    const query3 = "SELECT * FROM pedidos WHERE status_pagamento = 'rejected'";
+    const query4 = "SELECT * FROM pedidos WHERE status_pagamento = 'pending'";
+    try {
+        // MUDANÇA AQUI: de 'db.query' para 'pool.promise().query'
+        const [rows] = await pool.promise().query(query); 
+        const [rows2] = await pool.promise().query(query2);
+        const [rows3] = await pool.promise().query(query3);
+        const [rows4] = await pool.promise().query(query4);
+        const pedidosLimpos = JSON.parse(JSON.stringify(rows2));
+        // Enviamos o JSON direto para o Handlebars
+        res.render("dashboard", { dados: JSON.stringify(rows), pedidos: pedidosLimpos, pedidos_falha: rows3, pedidos_pendentes: rows4 }); 
+    } catch (err) {
+        console.error(err);
+        //res.status(500).send("Erro ao carregar o dashboard");
+    }
+});
+
+//envia codigo de rastreio
+app.post("/enviar-rastreio", async (req, res) => {
+    // Certifique-se que o nome do campo no formulário HTML é 'codigo' ou 'codigo_rastreio'
+    const { pedidoId, codigo } = req.body; 
+
+    try {
+        // 1. Busca os dados do cliente
+        const [rows] = await pool.promise().query(
+            "SELECT nome, email FROM pedidos WHERE id = ?", 
+            [pedidoId]
+        );
+
+        if (rows.length > 0) {
+            const cliente = rows[0];
+
+            // 2. Configura o envio do e-mail com HTML
+            const mailOptions = {
+                from: process.env.SMTP_USER,
+                to: cliente.email,
+                subject: `Boa notícia, ${cliente.nome.split(' ')[0]}! Seu pedido foi enviado 📦`,
+                html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                    <div style="background-color: #2196F3; color: white; padding: 20px; text-align: center;">
+                        <h1 style="margin: 0;">Pedido Enviado!</h1>
+                    </div>
+                    <div style="padding: 20px; color: #333; line-height: 1.6;">
+                        <p>Olá, <strong>${cliente.nome}</strong>,</p>
+                        <p>Seu pedido acaba de ser despachado e já está a caminho! Você pode acompanhar a entrega usando o código de rastreio abaixo:</p>
+                        
+                        <div style="background-color: #f9f9f9; border: 1px dashed #2196F3; padding: 15px; text-align: center; margin: 20px 0; border-radius: 4px;">
+                            <span style="font-size: 1.2rem; letter-spacing: 2px; font-weight: bold; color: #2196F3;">
+                                ${codigo}
+                            </span>
+                        </div>
+
+                        <p style="text-align: center;">
+                            <a href="https://www.linkderastreio.com.br/?codigo=${codigo}" 
+                               style="background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                               Rastrear minha encomenda
+                            </a>
+                        </p>
+
+                        <p style="font-size: 0.9rem; color: #777; margin-top: 30px;">
+                            Se tiver qualquer dúvida, basta responder a este e-mail.<br>
+                            Atenciosamente, <strong>Equipe Sua Loja</strong>
+                        </p>
+                    </div>
+                </div>
+                `
+            };
+
+            // Envia o e-mail
+            await transporter.sendMail(mailOptions);
+
+            // 3. ATUALIZA O BANCO (Isso desabilita o botão no dashboard)
+            await pool.promise().query(
+                "UPDATE pedidos SET codigo_rastreio = ? WHERE id = ?", 
+                [codigo, pedidoId]
+            );
+
+            res.redirect("/dash?sucesso=true");
+        } else {
+            res.status(404).send("Pedido não encontrado.");
+        }
+    } catch (err) {
+        console.error("Erro ao enviar rastreio:", err);
+        res.status(500).send("Erro interno ao processar envio.");
+    }
+});
+
+app.post("/enviar-email-rv", async (req, res)=>{
+    const pedidoId = req.body.pedidoId;
+    try {
+        // 1. Busca os dados do cliente
+        const [rows] = await pool.promise().query(
+            "SELECT nome, email FROM pedidos WHERE id = ?", 
+            [pedidoId]
+        );
+        if (rows.length > 0) {
+            const cliente = rows[0];
+
+            // 2. Configura o envio do e-mail com HTML
+            const mailOptions = {
+                from: process.env.SMTP_USER,
+                to: cliente.email,
+                subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
+                html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+    <!-- Header com cor de atenção/alerta (Amarelo ou Azul do MP) -->
+    <div style="background-color: #009EE3; color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0; font-size: 1.5rem;">Pendente: Finalize sua compra</h1>
+    </div>
+
+    <div style="padding: 20px; color: #333; line-height: 1.6;">
+        <p>Olá, <strong>${cliente.nome}</strong>,</p>
+        
+        <p>Notamos que houve um problema no processamento do seu pagamento e o seu pedido ainda não foi finalizado. Não se preocupe, seus itens ainda estão reservados!</p>
+        
+        <p>Para concluir sua compra com total segurança através do <strong>Mercado Pago</strong>, verifique as dúvidas mais comuns abaixo. Você poderá escolher entre Pix, Cartão de Crédito, Saldo Mercado pago ou Boleto:</p>
+
+        
+
+        <div style="background-color: #f9f9f9; border-left: 4px solid #009EE3; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0; font-size: 0.9rem; color: #555;">
+                <strong>Por que meu pagamento falhou?</strong><br>
+                As causas mais comuns são dados de cartão incorretos, falta de limite ou instabilidade momentânea do banco. Tente novamente em alguns minutos ou escolha um novo método de pagamento.
+            </p>
+        </div>
+
+        <p style="font-size: 0.9rem; color: #777; margin-top: 30px;">
+            Se você já realizou o pagamento, por favor, desconsidere este e-mail. Se precisar de ajuda, basta responder a esta mensagem.<br><br>
+            Atenciosamente, <strong>Equipe De vendas</strong>
+        </p>
+    </div>
+</div>`
+            };
+
+            // Envia o e-mail
+            await transporter.sendMail(mailOptions);
+            //fim do if
+            // Exemplo genérico de query
+await pool.promise().query("UPDATE pedidos SET email_falha = true WHERE id = ?", [pedidoId]);
+
+            res.redirect("/dash?sucesso=true");
+        } else {
+            res.status(404).send("Pedido não encontrado.");
+        }
+            
+            }
+            catch(err){
+                res.status(500).send(`erro ao enviar email: ${err.message}`)
+            }
+})
+
+//enviar sobre realizar compra
+app.post("/enviar-email-rc", async (req, res)=>{
+    const pedidoId = req.body.pedidoId;
+    try {
+        // 1. Busca os dados do cliente
+        const [rows] = await pool.promise().query(
+            "SELECT nome, email FROM pedidos WHERE id = ?", 
+            [pedidoId]
+        );
+        if (rows.length > 0) {
+            const cliente = rows[0];
+
+            // 2. Configura o envio do e-mail com HTML
+            const mailOptions = {
+                from: process.env.SMTP_USER,
+                to: cliente.email,
+                subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
+                html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+    <!-- Header com cor de atenção/alerta (Amarelo ou Azul do MP) -->
+    <div style="background-color: #009EE3; color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0; font-size: 1.5rem;">Pendente: Finalize sua compra</h1>
+    </div>
+
+    <div style="padding: 20px; color: #333; line-height: 1.6;">
+        <p>Olá, <strong>${cliente.nome}</strong>,</p>
+        
+        <p>Notamos que o seu pagamento e o seu pedido ainda não foi finalizado. Não se preocupe, seus itens ainda estão reservados!</p>
+        
+        <p>Para concluir sua compra com total segurança através do <strong>Mercado Pago</strong>, verifique as dúvidas mais comuns abaixo. Você poderá escolher entre Pix, Cartão de Crédito, Saldo Mercado pago ou Boleto:</p>
+
+        
+
+        <div style="background-color: #f9f9f9; border-left: 4px solid #009EE3; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <p style="margin: 0; font-size: 0.9rem; color: #555;">
+                <strong>Por que meu pagamento falhou?</strong><br>
+                As causas mais comuns são dados de cartão incorretos, falta de limite ou instabilidade momentânea do banco. Tente novamente em alguns minutos ou escolha um novo método de pagamento.
+            </p>
+        </div>
+
+        <p style="font-size: 0.9rem; color: #777; margin-top: 30px;">
+            Se você já realizou o pagamento, por favor, desconsidere este e-mail. Se precisar de ajuda, basta responder a esta mensagem.<br><br>
+            Atenciosamente, <strong>Equipe De vendas</strong>
+        </p>
+    </div>
+</div>`
+            };
+
+            // Envia o e-mail
+            await transporter.sendMail(mailOptions);
+            //fim do if
+            // Exemplo genérico de query
+await pool.promise().query("UPDATE pedidos SET email_pendente = true WHERE id = ?", [pedidoId]);
+
+            res.redirect("/dash?sucesso=true");
+        } else {
+            res.status(404).send("Pedido não encontrado.");
+        }
+            
+            }
+            catch(err){
+                res.status(500).send(`erro ao enviar email: ${err.message}`)
+            }
+})
+
+//middleware para limpar os arquivos
+const limparUploads = (req, res, next) => {
+  const pastaUploads = path.join(process.cwd(), "public/uploads");
+
+  try {
+    if (fs.existsSync(pastaUploads)) {
+      const arquivos = fs.readdirSync(pastaUploads);
+
+      arquivos.forEach(file => {
+        const filePath = path.join(pastaUploads, file);
+        fs.unlinkSync(filePath);
+      });
+
+      console.log("uploads antigos removidos");
+    }
+
+    next();
+  } catch (err) {
+    console.error("erro ao limpar uploads:", err);
+    next();
+  }
+};
+
+app.post(
+  "/validateupload",
+  limparUploads,
+  upload.array('imagens', 4),
+  async (req, res) => {
+
+    console.log("FILES:", req.files);
+    console.log("ID:", req.body.id);
+
+    try {
+      if (!req.files || req.files.length !== 4) {
+        return res.status(400).send("Envie exatamente 4 imagens.");
+      }
+
+      const caminhos = req.files.map(file => file.filename);
+      const idRegistro = req.body.id;
+
+      // garante que existe
+      await pool.promise().query(
+        "INSERT IGNORE INTO imagens (id) VALUES (?)",
+        [idRegistro]
+      );
+
+      const sql = `
+        UPDATE imagens 
+        SET caminho1 = ?, caminho2 = ?, caminho3 = ?, caminho4 = ? 
+        WHERE id = ?
+      `;
+
+      const [result] = await pool.promise().query(sql, [
+        caminhos[0],
+        caminhos[1],
+        caminhos[2],
+        caminhos[3],
+        idRegistro
+      ]);
+
+      console.log("RESULT:", result);
+
+      res.render("dashboard", { status: 'sucesso' });
+
+    } catch (error) {
+      console.error("Erro ao atualizar banco:", error);
+      res.status(500).send("Erro interno: " + error.message);
+    }
+});
+
+
+//enviar imagens pro servidor
+/*
+app.post("/validateupload", upload.array('imagens', 4), async  (req, res) => {
+    const pastaUploads = path.join(process.cwd(), "public/uploads");
+    
+    
+   
+    try {
+        // 🔥 apaga tudo dentro da pasta
+        const arquivos = fs.readdirSync(pastaUploads);
+
+        arquivos.forEach(file => {
+            const filePath = path.join(pastaUploads, file);
+            fs.unlinkSync(filePath);
+        });
+		console.log("uploads antigos removidos");
+        
+        // Como o front garante 4 arquivos, pegamos os nomes diretamente
+        const caminhos = [
+            req.files[0].filename,
+            req.files[1].filename,
+            req.files[2].filename,
+            req.files[3].filename
+        ];
+
+        // SQL: SET coluna1 = ?, coluna2 = ? ...
+        // Importante: use o WHERE para definir QUAL registro receberá essas fotos
+        const sql = "UPDATE imagens SET caminho1 = ?, caminho2 = ?, caminho3 = ?, caminho4 = ? WHERE id = ?";
+        
+        // O ID geralmente vem de um campo oculto (input type="hidden") no seu form
+        const idRegistro = req.body.id; 
+
+        // Executa a query passando o array de caminhos + o ID
+        await pool.promise().query(sql, [...caminhos, idRegistro]);
+
+        // Renderiza a view (o Toast deve ser tratado no EJS/HTML como vimos antes)
+        res.render("dashboard", { status: 'sucesso' });
+
+    } catch (error) {
+        console.error("Erro ao atualizar banco:", error);
+        res.status(500).send("Erro interno no servidor. " + error.message);
+    }
+    
+});
+*/
 
 app.listen(port, ()=>{
-console.log(`servidor rodando na porta ${port}`);
+    console.log("servidor rodando na porta: " + port)
 })
+

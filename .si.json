@@ -1,6 +1,6 @@
 {
   "plugin": "org.smartide.plugin.editor",
-  "run": "node index.js",
+  "run": "npm run dev",
   "intelligence": {
     ".js": {
       "enabled": true,
@@ -9,6 +9,14 @@
     ".json": {
       "enabled": true,
       "run": "vscode-json-language-server --stdio"
+    },
+    ".html": {
+      "enabled": true,
+      "run": "vscode-html-language-server --stdio"
+    },
+    ".css": {
+      "enabled": true,
+      "run": "vscode-css-language-server --stdio"
     }
   }
 }

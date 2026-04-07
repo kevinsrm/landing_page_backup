@@ -1,0 +1,20 @@
+.isNewProductPage, .isNewLoginPage {
+    background-image: url('/images/bgmobile.png');
+  background-size: cover;           /* Faz a imagem preencher todo o espaço disponível */
+  background-position: center;      /* Centraliza a imagem para não cortar apenas um lado */
+  background-repeat: no-repeat;     /* Impede que a imagem se repita caso a tela seja gigante */
+  background-attachment: fixed;     /* Mantém o fundo parado enquanto você rola a página */
+  min-height: 100dvh;                /* Garante que o fundo tenha no mínimo a altura da tela */
+margin:0 !important;
+padding: 0 !important
+}
+
+.glass-panel {
+  margin-top: 50px !important;
+  padding: 15px;
+    background: rgba(255, 255, 255, 0.2); /* Fundo branco com 20% de opacidade */
+    backdrop-filter: blur(10px);          /* O "pulo do gato": desfoca o fundo */
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px !important;       /* Bordas mais arredondadas ficam melhores */
+}
