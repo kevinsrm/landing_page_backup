@@ -350,7 +350,31 @@ Cor: Preto Espacial
       
     </form>
   </div> 
-  {{#if status}} 
+  {{#if (eq this.updated 'true')}}
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      M.toast({
+        html: 'O produto foi atualizado!',
+        displayLength: 9000,
+        classes: 'rounded green'
+      });
+    });
+  </script>
+  {{/if}}
+  
+  {{#if (eq this.updated 'false')}}
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      M.toast({
+        html: 'Erro ao atualizar o produto!' + codigo_de_erro,
+        displayLength: 9000,
+        classes: 'rounded red'
+      });
+    });
+  </script>
+  {{/if}}
+  
+  {{#if (eq this.updated false)}}
   <script>
     // Aguarda o DOM carregar para garantir que o Materialize já esteja pronto
     document.addEventListener('DOMContentLoaded', function() {
@@ -359,7 +383,7 @@ Cor: Preto Espacial
         displayLength: 9000,
         classes: 'rounded green'
       });
-    });
+    })
   </script>
 {{/if}}
 

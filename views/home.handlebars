@@ -1,9 +1,20 @@
+{{#if (eq this.updated 'true')}}
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      M.toast({
+        html: 'O produto foi atualizado!',
+        displayLength: 9000,
+        classes: 'rounded green'
+      });
+    });
+  </script>
+  {{/if}}
 <div style="margin-top:-20px !important" class="section no-pad-bot blue-grey lighten-5" id="index-banner">
     <div class="container">
         <br><br>
         <h1 class="header center orange-text text-darken-2" style="font-weight: 800;">Solução Incrível para Sua Rotina</h1>
         <div class="row center">
-            <h5 class="header col s12 light grey-text text-darken-3">Descubra como [Nome do Produto] pode facilitar sua vida com tecnologia de ponta e design exclusivo.</h5>
+            <h5 class="header col s12 light grey-text text-darken-3">{{resultado_home.descricao}}</h5>
         </div>
         <div class="carousel carousel-slider">
     <a class="carousel-item" href="#one!"><img class="materialboxed" src="uploads/{{imagem.caminho1}}"></a>
@@ -119,7 +130,8 @@
 
 <div id="comprar" class="section center container" style="padding: 60px 0;">
     <h3 class="orange-text text-darken-2">Oferta Exclusiva por Tempo Limitado</h3>
-    <p class="flow-text">De <strike>R$ 197,00</strike> por apenas <strong>R$ 97,00</strong></p>
+    <!--preço -->
+    <p class="flow-text">De <strike>R$ {{resultado_home.preco_sem_desconto}}</strike> por apenas <strong>{{resultado_home.preco_com_desconto}}</strong></p>
     <a id="setcheckout" href="#form-checkout" class="btn-large waves-effect waves-light green accent-4 modal-trigger scrollspy" style="font-size: 1.5rem; height: 70px; line-height: 70px; border-radius: 10px;">
         COMPRAR AGORA <i class="material-icons right">shopping_cart</i>
     </a>

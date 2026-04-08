@@ -225,9 +225,12 @@ app.set('views', 'views') ;
 app.get("/", async (req,res)=>{
 try{
     let sql = "SELECT caminho1, caminho2, caminho3, caminho4 FROM imagens WHERE id = 1";
+    //aqui
+    const dados_sql1 = "SELECT preco_sem_desconto, preco_com_desconto, descricao FROM home WHERE id = 1";
+      let [resultadoHome1] = await pool.promise().query(dados_sql1);
     
     let [rows] = await pool.promise().query(sql)
-res.render("home", {imagem: rows[0]});
+res.render("home", {imagem: rows[0], resultado_home: resultadoHome1[0]});
 }
 catch(err){
     console.log("ocorreu um erro na rota / : " + err.message);
@@ -605,16 +608,91 @@ const limparUploads = (req, res, next) => {
   }
 };
 
+
 app.post(
   "/validateupload",
   limparUploads,
   upload.array('imagens', 4),
   async (req, res) => {
+    const { preco_sem_desconto, preco, descricao, id } = req.body;
+    
+    try {
+      // 1. Validação inicial de arquivos
+      if (!req.files || req.files.length !== 4) {
+        // O "return" é vital para parar a execução aqui!
+        return res.status(400).send("Envie exatamente 4 imagens.");
+      }
 
+      // 2. Atualiza a tabela 'home'
+      const sqlHome = "UPDATE home SET preco_sem_desconto = ?, preco_com_desconto = ?, descricao = ? WHERE id = ?";
+      await pool.promise().query(sqlHome, [preco_sem_desconto, preco, descricao, id]);
+
+      // 3. Atualiza as imagens
+      const caminhos = req.files.map(file => file.filename);
+      
+      // Garante que o registro existe
+      await pool.promise().query("INSERT IGNORE INTO imagens (id) VALUES (?)", [id]);
+
+      const sqlImagens = `
+        UPDATE imagens 
+        SET caminho1 = ?, caminho2 = ?, caminho3 = ?, caminho4 = ? 
+        WHERE id = ?
+      `;
+      await pool.promise().query(sqlImagens, [...caminhos, id]);
+
+      // 4. Busca dados para renderizar a página final (se necessário)
+      const dados_sql = "SELECT preco_sem_desconto, preco_com_desconto, descricao FROM home WHERE id = 1";
+      let [resultadoHome] = await pool.promise().query(dados_sql);
+
+      // 5. ENVIA A RESPOSTA ÚNICA (Sucesso)
+      // Escolha apenas UM render ou redirect aqui
+      console.log("dados do banco " + resultadoHome[0])
+      res.render("dashboard", { 
+        status: 'sucesso', 
+        updated: true, 
+        resultado_home: resultadoHome[0]});
+
+    } catch (error) {
+      console.error("Erro no processo:", error);
+      // ENVIA A RESPOSTA ÚNICA (Erro)
+      if (!res.headersSent) {
+        res.redirect(`/dash?updated=false&error=${encodeURIComponent(error.message)}`);
+      }
+    }
+  }
+);
+
+
+
+
+
+/*
+app.post(
+  "/validateupload",
+  limparUploads,
+  upload.array('imagens', 4),
+  async (req, res) => {
+      const {preco_sem_desconto, preco, descricao} = req.body;
+      //preco_sem_desconto e preco descricao
+      
     console.log("FILES:", req.files);
     console.log("ID:", req.body.id);
-
+    //depois adicionar a coluna nome
+    const sqlHome = "UPDATE home SET preco_sem_desconto = ?, preco_com_desconto = ?, descricao = ? WHERE id = 1"
+    const dados_sql = "SELECT preco_sem_desconto, preco_com_desconto, descricao FROM home WHERE id = 1";
     try {
+        
+        try {
+    await pool.promise().query(sqlHome, [preco_sem_desconto, preco, descricao]);
+    let [resultadoHome] = await pool.promise().query(dados_sql);
+    // Redireciona indicando sucesso
+    res.render("home", {updated: true, resultado_home : resultadoHome}); 
+} catch (error1) {
+    console.error(error1);
+    // Redireciona indicando falha e passando a mensagem de erro
+    res.redirect(`/dash?updated=false&error=${encodeURIComponent(error1.message)}`);
+}
+
       if (!req.files || req.files.length !== 4) {
         return res.status(400).send("Envie exatamente 4 imagens.");
       }
@@ -651,6 +729,7 @@ app.post(
       res.status(500).send("Erro interno: " + error.message);
     }
 });
+*/
 
 
 //enviar imagens pro servidor
