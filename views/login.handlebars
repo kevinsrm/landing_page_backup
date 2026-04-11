@@ -1,0 +1,78 @@
+<div class="isNewLoginPage">
+
+  
+  <!-- glass panel form-->
+  <div class="flip-container">
+    
+  
+  
+  <!--login form-->
+      <div id="formcadastro2" class="row container glass-panel face back">
+        <h4 class="white-text light center">login</h4>
+    <form method="POST" action="/loginuser" class="col s12 containerrow">
+      <div class="row">
+        
+        
+        
+        
+        <div class="input-field col s12">
+          <input id="email1" type="email" class="validate" name="email" required>
+          
+          <label style="text-shadow: 0 0 5px black" class="white-text" for="email1">seu email</label>
+        </div>
+        
+        
+        
+    <div class="input-field col s12">
+      <input id="senha" type="password" class="validate" name="senha" required>
+      <label style="text-shadow: 0 0 5px black" class="white-text" for="senha">senha</label>
+    </div>
+    
+    
+    
+            <div class="input-field col s12">
+        <input type="text" id="2fa" name="doisfa" required>
+        <label style="text-shadow: 0 0 5px black" class="white-text" for="2fa">2fa</label>
+        </div>
+
+        
+        <div class="input-field col s12">
+          <button class="btn-large btn-float blue waves-effect waves-light col s12" id="last_name" type="submit" class="validate">entrar</button>
+        </div>
+        
+        
+      
+    </form>
+  </div>
+  </div>
+  </div>
+  
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  M.updateTextFields();
+  
+  setTimeout(() => {
+    M.updateTextFields();
+  }, 500);
+});
+</script>
+  
+  
+{{#if error}}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    M.toast({
+      html: '{{error}}', 
+      displayLength: 4000, 
+      classes: 'rounded red accent-2'
+    });
+    
+    // Forçar o card a ficar no lado de LOGIN se houver erro de login
+    const card = document.getElementById("card");
+    card.classList.add("flipped");
+  });
+</script>
+{{/if}}
+
+
+</div>

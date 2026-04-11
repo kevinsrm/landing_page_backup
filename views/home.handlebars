@@ -131,7 +131,7 @@
 <div id="comprar" class="section center container" style="padding: 60px 0;">
     <h3 class="orange-text text-darken-2">Oferta Exclusiva por Tempo Limitado</h3>
     <!--preço -->
-    <p class="flow-text">De <strike>R$ {{resultado_home.preco_sem_desconto}}</strike> por apenas <strong>{{resultado_home.preco_com_desconto}}</strong></p>
+    <p class="flow-text">De <strike>R$ {{resultado_home.preco_sem_desconto}}</strike> por apenas <strong>R$ {{resultado_home.preco_com_desconto}}</strong></p>
     <a id="setcheckout" href="#form-checkout" class="btn-large waves-effect waves-light green accent-4 modal-trigger scrollspy" style="font-size: 1.5rem; height: 70px; line-height: 70px; border-radius: 10px;">
         COMPRAR AGORA <i class="material-icons right">shopping_cart</i>
     </a>
@@ -146,9 +146,11 @@
 
 <div id="walletBrick_container"></div>
 
-
-
+<div id="form-checkout" class="modal container" style="margin-top: 40px;">
+<!--
 <div id="form-checkout" class="row hide container modal" style="display: none; margin-top: 40px;">
+-->
+
   <form action="/create-preference" method="POST" class="col s12 white z-depth-2" style="padding: 30px; border-radius: 15px;">
     
     <h5 class="center-align orange-text text-darken-2" style="margin-bottom: 30px; font-weight: 600;">
@@ -236,13 +238,19 @@
 
 
 
-<script>
+<script type="text/javascript">
+
+
     document.addEventListener('DOMContentLoaded', function() {
+        
         // Inicializa animações de scroll suave (opcional)
-       
+      M.updateTextFields();
+      setTimeout(() => {
+    M.updateTextFields();
+  }, 500);
         var scrollspy = document.querySelectorAll('.scrollspy');
 	
-    M.ScrollSpy.init(scrollspy);
+    M.ScrollSpy.init(scrollspy, {throttle: 20});
     
 	
 	var modal = document.querySelectorAll('.modal');
@@ -258,9 +266,10 @@
       }, 5000)
     });
 
-	
+	/*
         var imgs = document.querySelectorAll('.materialboxed');
     M.Materialbox.init(imgs);
+    */
 
     document.getElementById("setcheckout").addEventListener("click", (e) => {
     e.preventDefault();
@@ -274,6 +283,8 @@
     finalizar.innerText = "PROCESSANDO...";
     finalizar.classList.add("disabled");
 });
+
+
 document.getElementById("cpf").addEventListener("input", (e) => {
     let value = e.target.value;
 
@@ -290,6 +301,7 @@ document.getElementById("cpf").addEventListener("input", (e) => {
     // 4. Atualiza o valor do campo
     e.target.value = value;
 });
+
 document.getElementById("telefone").addEventListener("input", (e) => {
     let value = e.target.value;
 
@@ -367,7 +379,11 @@ cep.addEventListener("change", async ()=>{
         let bairro1 = JSON.parse(body);
         let cidade1 = JSON.parse(body);
         let estadoUf = JSON.parse(body);
-
+M.updateTextFields();
+ setTimeout(() => {
+    M.updateTextFields();
+  }, 500);
+  
         if(error.erro){
 	    M.toast({
   html: 'Insira um cep válido!',
@@ -399,7 +415,7 @@ cep.addEventListener("change", async ()=>{
 
 <!--
 <script>
-//essa é a public key que usei como o gemini me mandou
+
     //const mp = new MercadoPago("APP_USR-6277e7d2-5d69-4c57-8cb7-73069aa43cdc");
     const form = document.getElementById("form-checkout");    
     const finalizar = document.getElementById("finalizar");

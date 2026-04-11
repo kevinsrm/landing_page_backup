@@ -5,10 +5,21 @@ import dotenv from 'dotenv';
 import crypto from "crypto";
 import multer from "multer";
 import fs from "fs";
+import session from "express-session";
 dotenv.config();
 import path from 'path';
 const app = express();
 
+
+app.use(session({
+  secret: process.env.SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // true só com HTTPS
+    maxAge: 1000 * 60 * 60 // 1h
+  }
+}));
 
 
 const port = process.env.PORT || 3000;
@@ -177,7 +188,7 @@ preference.create({
     },
       shipments: {
   mode: 'not_specified',
-  cost: process.env.FRETE, // Custo fixo que você definiu
+  cost: Number(process.env.FRETE), // Custo fixo que você definiu
 },
    back_urls: {
                 success: `${process.env.SITE_URL}/success`, // Altere para sua URL >
@@ -189,7 +200,7 @@ preference.create({
 })
 .then((data) => {
 console.log(data)
-res.redirect(data.init_point);
+return res.redirect(data.init_point);
 /*
 res.status(200).json({
 preference_id: data.id,
@@ -365,21 +376,32 @@ res.redirect("/")
 })
 
 app.get("/dash", async (req, res) => {
+    
+    if (!req.session.usuario) {
+    return res.redirect("/login");
+  }
+  
     // Query correta usando DATE_FORMAT para evitar problemas de fuso horário no JS
     const query = "SELECT DATE_FORMAT(data_pedido, '%Y-%m-%d') AS data, COUNT(*) AS total FROM pedidos WHERE status_pagamento = 'approved' AND data_pedido >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(data_pedido) ORDER BY data_pedido ASC;";
     
     const query2 = "SELECT * FROM pedidos WHERE status_pagamento = 'approved'";
     const query3 = "SELECT * FROM pedidos WHERE status_pagamento = 'rejected'";
     const query4 = "SELECT * FROM pedidos WHERE status_pagamento = 'pending'";
+    const queryUser = "SELECT * FROM usuarios WHERE user_id = 1";
     try {
         // MUDANÇA AQUI: de 'db.query' para 'pool.promise().query'
         const [rows] = await pool.promise().query(query); 
         const [rows2] = await pool.promise().query(query2);
         const [rows3] = await pool.promise().query(query3);
         const [rows4] = await pool.promise().query(query4);
+        const [rows5] = await pool.promise().query(queryUser);
+        
         const pedidosLimpos = JSON.parse(JSON.stringify(rows2));
+        
         // Enviamos o JSON direto para o Handlebars
-        res.render("dashboard", { dados: JSON.stringify(rows), pedidos: pedidosLimpos, pedidos_falha: rows3, pedidos_pendentes: rows4 }); 
+       // dados: rows5[0], admin: req.session.usuario.email_usuario
+        res.render("dashboard", { dados: JSON.stringify(rows), pedidos: pedidosLimpos, pedidos_falha: rows3, pedidos_pendentes: rows4, dadosUser: rows5[0], admin: req.session.usuario.email_u}); 
+      
     } catch (err) {
         console.error(err);
         //res.status(500).send("Erro ao carregar o dashboard");
@@ -648,11 +670,17 @@ app.post(
       // Escolha apenas UM render ou redirect aqui
       console.log("dados do banco " + resultadoHome[0])
       res.render("dashboard", { 
+          //status
         status: 'sucesso', 
-        updated: true, 
+        updated: "true",
         resultado_home: resultadoHome[0]});
 
     } catch (error) {
+        res.render("dashboard", { 
+          //status
+        status: 'falha', 
+        updated: "false", 
+        resultado_home: resultadoHome[0]});
       console.error("Erro no processo:", error);
       // ENVIA A RESPOSTA ÚNICA (Erro)
       if (!res.headersSent) {
@@ -777,6 +805,60 @@ app.post("/validateupload", upload.array('imagens', 4), async  (req, res) => {
     
 });
 */
+
+app.get("/login", (req,res)=>{
+  /*
+  if(req.session.isLoged){
+    res.redirect("/");
+  }
+  
+  
+  */
+  res.render("login");
+})
+
+app.post("/loginuser", async (req, res) =>{
+  try{
+    console.log("Dados recebidos:", req.body);
+
+    if (!req.body || !req.body.email) {
+      return res.status(400).send("Dados do formulário não recebidos corretamente.");
+    }
+  const {email, senha, doisfa} = req.body;
+  
+  let sql = await "SELECT email, senha, two_factor_secret FROM usuarios WHERE user_id = 1";
+  
+  let [result] = await pool.promise().query(sql);
+  if(result[0].email == email && result[0].senha == senha && result[0].two_factor_secret == doisfa){
+      
+      req.session.usuario = { email_u: result[0].email, logado: true };
+      
+    //aqui devia levar pra rota dash que leva pro dashboard.handlear mas nao rolou
+  if(req.session.usuario.logado){
+  return res.redirect("/dash");
+  }
+      //criar cookie de sessao aqui
+//return res.render("dashboard", { dados: result[0]});
+  }
+  else{
+return res.render("login", {mensagem: "error_loging"})
+  }
+  }
+  catch(err){
+    res.status(500).send(`erro : ${err.message}`)
+  }
+})
+
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.send('Erro ao sair');
+    }
+    res.clearCookie('connect.sid'); // Limpa o cookie da sessão
+    res.redirect('/');
+  });
+});
+
 
 app.listen(port, ()=>{
     console.log("servidor rodando na porta: " + port)

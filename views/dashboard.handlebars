@@ -19,16 +19,21 @@
                 <div class="background">
                     <img src="https://materializecss.com/images/office.jpg">
                 </div>
-                <a href="#user"><img class="circle" src="https://materializecss.com/images/yuna.jpg"></a>
-                <a href="#name"><span class="white-text name">John Doe</span></a>
-                <a href="#email"><span class="white-text email">jdandturk@gmail.com</span></a>
+                <a href="#user"><img class="circle" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTcQQHb7tcvj3VfMZW9DDZv14zukLO80vImea-NbJA3IqbPshI-PhesK6ky&s=10"></a>
+                <a href="#name"><span class="white-text name">Admin</span></a>
+                <a href="#email"><span class="white-text email">{{admin}}</span></a>
             </div>
         </li>
+        <li><a href="/"><i class="material-icons">home</i>Inicio</a></li>
         <li><a class="el" data-target="box-dashboard" href="#!"><i class="material-icons">dashboard</i>Dashboard</a></li>
 <li><a class="el" data-target="box-vendas" href="#!"><i class="material-icons">shopping_cart</i>Vendas</a></li>
+
 <li><div class="divider"></div></li>
 <li><a class="subheader">Relatórios</a></li>
-<li><a class="el" data-target="box-credenciais" href="#!">Página</a></li>
+<li><a class="el" data-target="box-credenciais" href="#!">produto</a></li>
+
+<li><div class="divider"></div></li>
+<li><a class="el" href="/logout">sair</a></li>
 
     </ul>
 
@@ -52,7 +57,7 @@
          <div id="box-vendas" class="content-box hide">
             <div class="row" style="width: 100% !important">
                 <div class="col s12" style="width: 100% !important">
-                    <h3 style="text-shadow: 0 0 5px black" class="white-text light">Aqui você pode gerenciar suas vendas</h3>
+                    <h5 style="text-shadow: 0 0 5px black" class="white-text light">Aqui você pode gerenciar suas vendas</h5>
  
  <!--table com vendas -->
  <div class="row">
@@ -269,7 +274,7 @@
         <div id="box-credenciais" class="content-box hide">
             <div class="row" style="width: 100% !important">
                 <div style="display: flex; justify-content: center; align-items: center; flex-direction: column" class="col s12" style="width: 100% !important">
-                    <h3 style="text-shadow: 0 0 5px black" class="white-text light">Aqui você pode editar sua landing page</h3>
+                    <h5 style="text-shadow: 0 0 5px black" class="white-text light">Aqui você pode editar sua landing page</h5>
                     
                     
                  
@@ -282,14 +287,14 @@
       
       
       
-        <div class="input-field col s6">
+        <div class="input-field col s12">
           <input id="preco_sem_desconto" type="text" class="validate" name="preco_sem_desconto">
-          <label style="text-shadow: 0 0 5px black" class="white-text" for="preco">preço sem desconto Ex: 150</label>
+          <label style="text-shadow: 0 0 5px black" class="white-text" for="preco_sem_desconto">preço sem desconto Ex: 150</label>
         </div>
         
         
         
-        <div class="input-field col s6">
+        <div class="input-field col s12">
         <input type="hidden" name="id" value="1">
           <input id="preco" type="text" class="validate">
           <input id="valorLimpo" style="display: none" type="text" name="preco">
@@ -350,43 +355,38 @@ Cor: Preto Espacial
       
     </form>
   </div> 
-  {{#if (eq this.updated 'true')}}
+  {{#if (eq this.updated "true")}}
   <script>
   document.addEventListener('DOMContentLoaded', function() {
       M.toast({
         html: 'O produto foi atualizado!',
-        displayLength: 9000,
+        displayLength: 5000,
         classes: 'rounded green'
       });
     });
+    setTimeout(()=>{
+        window.location.href = "/dash";
+    },5000)
   </script>
   {{/if}}
   
-  {{#if (eq this.updated 'false')}}
+  {{#if (eq this.updated "false")}}
   <script>
   document.addEventListener('DOMContentLoaded', function() {
       M.toast({
         html: 'Erro ao atualizar o produto!' + codigo_de_erro,
-        displayLength: 9000,
+        displayLength: 5000,
         classes: 'rounded red'
       });
     });
+    
+    setTimeout(()=>{
+        window.location.href = "/dash";
+    },5000)
   </script>
   {{/if}}
   
-  {{#if (eq this.updated false)}}
-  <script>
-    // Aguarda o DOM carregar para garantir que o Materialize já esteja pronto
-    document.addEventListener('DOMContentLoaded', function() {
-      M.toast({
-        html: 'O produto foi atualizado!',
-        displayLength: 9000,
-        classes: 'rounded green'
-      });
-    })
-  </script>
-{{/if}}
-
+  
   
   
   <!--apagar conforme necessário-->
@@ -534,6 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
     
     <script type="text/javascript">
+    //aqui
       let btn_dashboard = document.getElementById("btn-dashboard");
       let btn_vendas = document.getElementById("btn-vendas");
       let dashboard = document.getElementById("dashboard");
