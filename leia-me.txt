@@ -1,3 +1,207 @@
 o servidor deve ser hospedado no railway ou render pois a configuração
 é mais facil
 apos subir o servidor você deve criar o banco de dados manualmente
+se for realizar testes de pagamento utilize a guia anonima para não afetar sua conta real
+
+lembre-se de substituir as credenciais do .env pelas suas proprias
+
+Para criar uma aplicação e obter o seu Access Token no Checkout Pro do Mercado Pago, o processo central é feito através do Painel do Desenvolvedor.
+​Aqui estão as URLs essenciais para esse processo:
+​1. Criar a Aplicação e Gerenciar Credenciais
+​Esta é a página principal onde você cria o projeto para obter o Client ID, Client Secret e, consequentemente, o Access Token.
+​URL: https://www.mercadopago.com.br/developers/panel/applications
+
+
+-------------------------------------------------------------------
+
+conta de vendedor
+
+conta de teste para teste
+
+Vendedor
+
+País
+
+BrasilBrasil
+User ID
+
+3279351403
+Usuário
+
+TESTUSER7041342846856911576
+Senha
+
+y9kh17lKe4
+Código de verificação
+
+351403
+
+--------------------------------------------------------------
+
+conta de comprador
+conta de teste pra Brasil
+
+Comprador
+
+País
+
+BrasilBrasil
+User ID
+
+3280000992
+Usuário
+
+TESTUSER5637109281825836510
+Senha
+
+Q1051QWQzE
+Código de verificação
+
+000992
+
+-----------------------------------------------------------
+
+para ativar a opção de pagar por pix no checkout você deve ativar o pix na sua conta mercado pago.
+
+-----------------------------------------------------------
+
+Cartões de teste
+
+Brasil
+Cartão Mastercard
+
+Número
+
+5031 4332 1540 6351
+
+Data de validade
+
+11/30
+
+Código de segurança
+
+123
+
+Cartão Visa
+
+Número
+
+4235 6477 2802 5682
+
+Data de validade
+
+11/30
+
+Código de segurança
+
+123
+
+Cartão American Express
+
+Número
+
+3753 651535 56885
+
+Data de validade
+
+11/30
+
+Código de segurança
+
+1234
+
+Cartão Elo Debito
+
+Número
+
+5067 7667 8388 8311
+
+Data de validade
+
+11/30
+
+Código de segurança
+
+123
+
+Para testar diferentes resultados de pagamento, insira o status desejado no nome do titular do cartão:
+
+Pagamento aprovado
+
+Status de pagamento
+
+APRO
+
+Documento de identidade
+
+12345678909
+
+Recusado por erro geral
+
+Status de pagamento
+
+OTHE
+
+Documento de identidade
+
+12345678909
+
+Pagamento pendente
+
+Status de pagamento
+
+CONT
+
+Documento de identidade
+
+-
+
+Recusado com validação para autorizar
+
+Status de pagamento
+
+CALL
+
+Documento de identidade
+
+-
+
+Recusado por quantia insuficiente
+
+Status de pagamento
+
+FUND
+
+Documento de identidade
+
+-
+
+Recusado por código de segurança inválido
+
+Status de pagamento
+
+SECU
+
+Documento de identidade
+
+-
+
+Recusado por problema com a data de vencimento
+
+Status de pagamento
+
+EXPI
+
+Documento de identidade
+
+-
+
+Recusado por erro no formulário
+
+Status de pagamento
+
+FORM
+
+Documento de identidade
+
+-
