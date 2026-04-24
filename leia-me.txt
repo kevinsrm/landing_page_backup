@@ -14,6 +14,19 @@ Para criar uma aplicação e obter o seu Access Token no Checkout Pro do Mercado
 
 -------------------------------------------------------------------
 
+para entrar no dashboard é necessario colocar /dash no fim da url
+ex: seusite.com.br/dash
+
+para fazer login use essas credenciais
+
+email: admin@eu.com
+senha: resident8512
+2fa: 8512
+
+
+
+-------------------------------------------------------------------
+
 conta de vendedor
 
 conta de teste para teste
