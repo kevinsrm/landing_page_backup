@@ -68,10 +68,15 @@ app.get("/testando", (req, res)=>{
 // Configure and create the pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  connectionLimit: 50, // Adjust based on needs
+  connectionLimit: 50,
+  ssl:{
+  rejectUnauthorized: false,
+  ca_certificate: process.env.CA_CERTIFICATE
+  } // Adjust based on needs
 });
 
 import nodemailer from "nodemailer";
@@ -832,8 +837,16 @@ app.post("/loginuser", async (req, res) =>{
   if(result[0].email == email && result[0].senha == senha && result[0].two_factor_secret == doisfa){
       
       req.session.usuario = { email_u: result[0].email, logado: true };
-      
+      req.session.save((err) => {
+  if (err) {
+    console.error("Erro ao salvar sessão:", err);
+    return res.render("login", { mensagem: "error_server" });
+  }
+  return res.redirect("/dash");
+});
+}
     //aqui devia levar pra rota dash que leva pro dashboard.handlear mas nao rolou
+  /*
   if(req.session.usuario.logado){
   return res.redirect("/dash");
   }
@@ -843,6 +856,7 @@ app.post("/loginuser", async (req, res) =>{
   else{
 return res.render("login", {mensagem: "error_loging"})
   }
+  */
   }
   catch(err){
     res.status(500).send(`erro : ${err.message}`)
