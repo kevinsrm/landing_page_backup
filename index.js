@@ -874,7 +874,13 @@ app.get('/logout', (req, res) => {
 });
 
 
+app.use((req, res, next)=>{
+    res.status(404).render("notfound")
+})
+
 app.listen(port, ()=>{
     console.log("servidor rodando na porta: " + port)
 })
+
+
 
