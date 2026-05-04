@@ -314,19 +314,11 @@ await pool.promise().query(
                                 Olá, tudo bem?
                             </p>
                             <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-                                Boas notícias! Recebemos a confirmação do seu pagamento e seu pedido já está em nossa fila de processamento.
+                                Boas notícias! Recebemos seu pagamento e seu script ja está disponível no botão abaixo. Atenção, todos os guias de instalação estão dentro do script.
                             </p>
+                            <a href="https://drive.google.com/file/d/1RGMlXew0zqldWRg38njBwOM8DJeDQ4rT/view?usp=drivesdk" style="width:200px; height: 50px; border-radius: 20px; background-color: #00ffcb; border: 0; color: #ffffff; font-weight: 500; font-style: bold;">BAIXAR SCRIPT</a>
                             
-                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f7ff; border-left: 4px solid #3498db; border-radius: 4px;">
-                                <tr>
-                                    <td style="padding: 20px;">
-                                        <strong style="color: #2c3e50; font-size: 15px; display: block; margin-bottom: 5px;">Próximos passos:</strong>
-                                        <p style="font-size: 14px; color: #5a6c7d; margin: 0;">
-                                            Assim que o envio for realizado, você receberá um novo e-mail contendo o seu <strong>código de rastreio</strong> e o link para acompanhar a entrega.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
+                           
 
                             <p style="font-size: 14px; color: #9b9b9b; margin-top: 30px; text-align: center;">
                                 Se tiver qualquer dúvida, basta responder a este e-mail.
@@ -337,7 +329,7 @@ await pool.promise().query(
                     <tr>
                         <td align="center" style="padding: 20px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
                             <p style="font-size: 12px; color: #bdc3c7; margin: 0;">
-                                &copy; 2026 Sua Loja Digital. Todos os direitos reservados.
+                                &copy; 2026 kevinsrm.shop. Todos os direitos reservados.
                             </p>
                         </td>
                     </tr>
