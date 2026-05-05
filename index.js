@@ -107,7 +107,7 @@ async function sendSimpleMessage() {
   const mailgun = new Mailgun(FormData);
   const mg = mailgun.client({
     username: "api",
-    key: process.env.API_KEY || "6b42df4da25dae846828734d26be0ca3-428c42a0-07d552cb",
+    key: process.env.API_KEY,
     // When you have an EU-domain, you must specify the endpoint:
     // url: "https://api.eu.mailgun.net"
   });
@@ -358,7 +358,7 @@ await pool.promise().query(
   const mailgun = new Mailgun(FormData);
   const mg = mailgun.client({
     username: "api",
-    key: process.env.API_KEY || "6b42df4da25dae846828734d26be0ca3-428c42a0-07d552cb",
+    key: process.env.API_KEY,
     // When you have an EU-domain, you must specify the endpoint:
     // url: "https://api.eu.mailgun.net"
   });
