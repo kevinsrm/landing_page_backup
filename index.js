@@ -6,8 +6,14 @@ import crypto from "crypto";
 import multer from "multer";
 import fs from "fs";
 import session from "express-session";
+import FormData from "form-data"; // form-data v4.0.1
+import Mailgun from "mailgun.js"; // mailgun.js v11.1.0
 dotenv.config();
 import path from 'path';
+import sgMail from '@sendgrid/mail';
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+// sgMail.setDataResidency('eu'); 
+// uncomment the above line if you are sending mail using a regional EU subuser
 const app = express();
 
 
@@ -59,6 +65,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+
+
 // database.js
 import mysql from 'mysql2';
 app.use(express.static('public'));
@@ -92,33 +100,94 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-app.get("/verificarconexaosmtp", async (req, res)=>{
-   try {
-  await transporter.verify();
-  res.status(200).send("conexão bem sucedida: <a href='/sendmessage'>enviar mensagem de teste</a> ");
-} catch (err) {
-  console.error("Verification failed:", err);
-  res.status(500).send("erro de conexão: ",err.message());
+app.get("/sendteste", (req, res)=>{
+    
+
+async function sendSimpleMessage() {
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.API_KEY || "6b42df4da25dae846828734d26be0ca3-428c42a0-07d552cb",
+    // When you have an EU-domain, you must specify the endpoint:
+    // url: "https://api.eu.mailgun.net"
+  });
+  try {
+    const data = await mg.messages.create("contato.kevinsrm.shop", {
+        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
+      from: "no-reply@contato.kevinsrm.shop",
+      to: ["kevinborrachao@gmail.com"],
+      subject: "Seu pagamento já foi aprovado",
+      text: "Seu pagamento foi aprovado",
+      html: `
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Pagamento Confirmado</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f6f9fc; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <tr>
+                        <td align="center" style="background-color: #27ae60; padding: 40px 20px;">
+                            <div style="font-size: 50px; color: #ffffff; margin-bottom: 10px;">✔</div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
+                                Olá, tudo bem?
+                            </p>
+                            <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
+                                Boas notícias! Recebemos seu pagamento e seu script ja está disponível no botão abaixo. Atenção, todos os guias de instalação estão dentro do script.
+                            </p>
+                            <div style="display: flex; width: 100%; justify-content: center; align-items: center">
+                            <a class="center" 
+   href="https://drive.google.com/file/d/1RGMlXew0zqldWRg38njBwOM8DJeDQ4rT/view?usp=drivesdk" 
+   style="width:300px; height: 90px; border-radius: 20px; background-color: #6367FF; color: #ffffff; font-weight: 700; font-size: 30px; display: flex; justify-content: center; align-items: center; text-decoration: none;">
+   BAIXAR SCRIPT
+</a>
+
+                            </div>
+                            
+                           
+
+                            <p style="font-size: 14px; color: #9b9b9b; margin-top: 30px; text-align: center;">
+                                Se tiver qualquer dúvida, basta responder a este e-mail.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding: 20px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
+                            <p style="font-size: 12px; color: #bdc3c7; margin: 0;">
+                                &copy; 2026 kevinsrm.shop. Todos os direitos reservados.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`,
+    });
+
+    console.log(data); // logs response data
+    res.send("email enviado com sucesso")
+  } catch (error) {
+      res.send("falha ao enviar email")
+    console.log(error); //logs any error
+  }
 }
+sendSimpleMessage()
 })
 
-//enviar email de teste
-app.get("/sendmessage", async (req, res)=>{
-   try {
-  const info = await transporter.sendMail({
-    from: process.env.SMTP_USER, // sender address
-    to: "kevinribeiro2077@gmail.com", // list of recipients
-    subject: "esta é um email de teste", // subject line
-    text: "Hello world?", // plain text body
-    html: "<h1>Hello world?</h1><p>esta é uma mensagem de teste</p>", // HTML body
-  });
-  if (info.rejected.length < 1) {
-    res.status(200).send("email enviado, id: " + info.messageId);
-  }
-} catch (err) {
-  res.status(500).send("erro enviando mensagem: " + err.message);
-}
-})
+
 
 // Exemplo com Pool
 pool.getConnection((err, connection) => {
@@ -285,12 +354,22 @@ await pool.promise().query(
   if (status === "approved") {
     //enviar um email pro usuario confirmando pagamento
    try {
-  const info = await transporter.sendMail({
-    from: process.env.SMTP_USER, // sender address
-    to: emailUsuario, // list of recipients
-    subject: `Seu pagamento foi aprovado`, // subject line
-    text: "Seu pagamento já foi aprovado", // plain text body
-    html: `
+  async function sendSimpleMessage() {
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.API_KEY || "6b42df4da25dae846828734d26be0ca3-428c42a0-07d552cb",
+    // When you have an EU-domain, you must specify the endpoint:
+    // url: "https://api.eu.mailgun.net"
+  });
+  try {
+    const data = await mg.messages.create("contato.kevinsrm.shop", {
+        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
+      from: "no-reply@contato.kevinsrm.shop",
+      to: [emailUsuario],
+      subject: "Seu pagamento já foi aprovado",
+      text: "Seu pagamento foi aprovado",
+      html: `
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -316,7 +395,14 @@ await pool.promise().query(
                             <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
                                 Boas notícias! Recebemos seu pagamento e seu script ja está disponível no botão abaixo. Atenção, todos os guias de instalação estão dentro do script.
                             </p>
-                            <a href="https://drive.google.com/file/d/1RGMlXew0zqldWRg38njBwOM8DJeDQ4rT/view?usp=drivesdk" style="width:200px; height: 50px; border-radius: 20px; background-color: #00ffcb; border: 0; color: #ffffff; font-weight: 500; font-style: bold;">BAIXAR SCRIPT</a>
+                            <div style="display: flex; width: 100%; justify-content: center; align-items: center">
+                            <a class="center" 
+   href="https://drive.google.com/file/d/1RGMlXew0zqldWRg38njBwOM8DJeDQ4rT/view?usp=drivesdk" 
+   style="width:300px; height: 90px; border-radius: 20px; background-color: #6367FF; color: #ffffff; font-weight: 700; font-size: 30px; display: flex; justify-content: center; align-items: center; text-decoration: none;">
+   BAIXAR SCRIPT
+</a>
+
+                            </div>
                             
                            
 
@@ -339,8 +425,15 @@ await pool.promise().query(
     </table>
 </body>
 </html>
-`, // HTML body
-  });
+`,
+    });
+
+    console.log(data); // logs response data
+  } catch (error) {
+    console.log(error); //logs any error
+  }
+}
+sendSimpleMessage()
 } catch (err) {
   res.status(500).send("Error while sending mail: " + err.message);
 }
