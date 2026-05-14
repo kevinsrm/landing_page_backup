@@ -8,12 +8,14 @@ import fs from "fs";
 import session from "express-session";
 import FormData from "form-data"; // form-data v4.0.1
 import Mailgun from "mailgun.js"; // mailgun.js v11.1.0
+
 dotenv.config();
+import { GoogleGenAI } from "@google/genai";
+const ai = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_API_KEY
+});
 import path from 'path';
-import sgMail from '@sendgrid/mail';
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-// sgMail.setDataResidency('eu'); 
-// uncomment the above line if you are sending mail using a regional EU subuser
+
 const app = express();
 
 
@@ -87,22 +89,11 @@ const pool = mysql.createPool({
   } // Adjust based on needs
 });
 
-import nodemailer from "nodemailer";
 
-// criando transportador usando SMTP
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: true, // use STARTTLS (upgrade connection to TLS after connecting)
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
 
 app.get("/sendteste", (req, res)=>{
     
-
+const pedidoId = "yyeyegh473773737377";
 async function sendSimpleMessage() {
   const mailgun = new Mailgun(FormData);
   const mg = mailgun.client({
@@ -134,6 +125,13 @@ async function sendSimpleMessage() {
                             <div style="font-size: 50px; color: #ffffff; margin-bottom: 10px;">✔</div>
                             <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
                         </td>
+                    </tr>
+                    <tr>
+                    <td>
+                    <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
+            id do pedido ${pedidoId}        
+                    </p>
+                    </td>
                     </tr>
                     
                     <tr>
@@ -386,6 +384,13 @@ await pool.promise().query(
                             <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
                         </td>
                     </tr>
+                     <tr>
+                    <td>
+                    <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
+            id do pedido ${pedidoId}        
+                    </p>
+                    </td>
+                    </tr>
                     
                     <tr>
                         <td style="padding: 40px 30px;">
@@ -514,11 +519,22 @@ app.post("/enviar-rastreio", async (req, res) => {
             const cliente = rows[0];
 
             // 2. Configura o envio do e-mail com HTML
-            const mailOptions = {
-                from: process.env.SMTP_USER,
-                to: cliente.email,
-                subject: `Boa notícia, ${cliente.nome.split(' ')[0]}! Seu pedido foi enviado 📦`,
-                html: `
+            async function sendSimpleMessage() {
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.API_KEY,
+    // When you have an EU-domain, you must specify the endpoint:
+    // url: "https://api.eu.mailgun.net"
+  });
+  try {
+    const data = await mg.messages.create("contato.kevinsrm.shop", {
+        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
+      from: "no-reply@contato.kevinsrm.shop",
+      to: cliente.email,
+      subject: `Boa notícia, ${cliente.nome.split(' ')[0]}! Seu pedido foi enviado 📦`,
+      text: "Boa notícia seu pedido foi enviado",
+      html:  `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
                     <div style="background-color: #2196F3; color: white; padding: 20px; text-align: center;">
                         <h1 style="margin: 0;">Pedido Enviado!</h1>
@@ -546,11 +562,17 @@ app.post("/enviar-rastreio", async (req, res) => {
                         </p>
                     </div>
                 </div>
-                `
-            };
+                `,
+    });
 
-            // Envia o e-mail
-            await transporter.sendMail(mailOptions);
+    console.log(data); // logs response data
+    res.send("email enviado com sucesso")
+  } catch (error) {
+      res.send("falha ao enviar email")
+    console.log(error); //logs any error
+  }
+}
+sendSimpleMessage()
 
             // 3. ATUALIZA O BANCO (Isso desabilita o botão no dashboard)
             await pool.promise().query(
@@ -580,11 +602,22 @@ app.post("/enviar-email-rv", async (req, res)=>{
             const cliente = rows[0];
 
             // 2. Configura o envio do e-mail com HTML
-            const mailOptions = {
-                from: process.env.SMTP_USER,
-                to: cliente.email,
-                subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
-                html: `
+            async function sendSimpleMessage() {
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.API_KEY,
+    // When you have an EU-domain, you must specify the endpoint:
+    // url: "https://api.eu.mailgun.net"
+  });
+  try {
+    const data = await mg.messages.create("contato.kevinsrm.shop", {
+        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
+      from: "no-reply@contato.kevinsrm.shop",
+      to: cliente.email,
+      subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
+      text: "Falta pouco para seu pedido ser enviado",
+      html:  `
                 <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
     <!-- Header com cor de atenção/alerta (Amarelo ou Azul do MP) -->
     <div style="background-color: #009EE3; color: white; padding: 20px; text-align: center;">
@@ -612,11 +645,17 @@ app.post("/enviar-email-rv", async (req, res)=>{
             Atenciosamente, <strong>Equipe De vendas</strong>
         </p>
     </div>
-</div>`
-            };
+</div>`,
+    });
 
-            // Envia o e-mail
-            await transporter.sendMail(mailOptions);
+    console.log(data); // logs response data
+    res.send("email enviado com sucesso")
+  } catch (error) {
+      res.send("falha ao enviar email")
+    console.log(error); //logs any error
+  }
+}
+sendSimpleMessage()
             //fim do if
             // Exemplo genérico de query
 await pool.promise().query("UPDATE pedidos SET email_falha = true WHERE id = ?", [pedidoId]);
@@ -645,12 +684,22 @@ app.post("/enviar-email-rc", async (req, res)=>{
             const cliente = rows[0];
 
             // 2. Configura o envio do e-mail com HTML
-            const mailOptions = {
-                from: process.env.SMTP_USER,
-                to: cliente.email,
-                subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
-                html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            async function sendSimpleMessage() {
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.API_KEY,
+    // When you have an EU-domain, you must specify the endpoint:
+    // url: "https://api.eu.mailgun.net"
+  });
+  try {
+    const data = await mg.messages.create("contato.kevinsrm.shop", {
+        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
+      from: "no-reply@contato.kevinsrm.shop",
+      to: cliente.email,
+      subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
+      text: "Falta pouco para seu pedido ser enviado",
+      html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
     <!-- Header com cor de atenção/alerta (Amarelo ou Azul do MP) -->
     <div style="background-color: #009EE3; color: white; padding: 20px; text-align: center;">
         <h1 style="margin: 0; font-size: 1.5rem;">Pendente: Finalize sua compra</h1>
@@ -677,11 +726,18 @@ app.post("/enviar-email-rc", async (req, res)=>{
             Atenciosamente, <strong>Equipe De vendas</strong>
         </p>
     </div>
-</div>`
-            };
+</div>`,
+    });
 
-            // Envia o e-mail
-            await transporter.sendMail(mailOptions);
+    console.log(data); // logs response data
+    res.send("email enviado com sucesso")
+  } catch (error) {
+      res.send("falha ao enviar email")
+    console.log(error); //logs any error
+  }
+}
+sendSimpleMessage()
+            
             //fim do if
             // Exemplo genérico de query
 await pool.promise().query("UPDATE pedidos SET email_pendente = true WHERE id = ?", [pedidoId]);
@@ -780,122 +836,6 @@ app.post(
   }
 );
 
-
-
-
-
-/*
-app.post(
-  "/validateupload",
-  limparUploads,
-  upload.array('imagens', 4),
-  async (req, res) => {
-      const {preco_sem_desconto, preco, descricao} = req.body;
-      //preco_sem_desconto e preco descricao
-      
-    console.log("FILES:", req.files);
-    console.log("ID:", req.body.id);
-    //depois adicionar a coluna nome
-    const sqlHome = "UPDATE home SET preco_sem_desconto = ?, preco_com_desconto = ?, descricao = ? WHERE id = 1"
-    const dados_sql = "SELECT preco_sem_desconto, preco_com_desconto, descricao FROM home WHERE id = 1";
-    try {
-        
-        try {
-    await pool.promise().query(sqlHome, [preco_sem_desconto, preco, descricao]);
-    let [resultadoHome] = await pool.promise().query(dados_sql);
-    // Redireciona indicando sucesso
-    res.render("home", {updated: true, resultado_home : resultadoHome}); 
-} catch (error1) {
-    console.error(error1);
-    // Redireciona indicando falha e passando a mensagem de erro
-    res.redirect(`/dash?updated=false&error=${encodeURIComponent(error1.message)}`);
-}
-
-      if (!req.files || req.files.length !== 4) {
-        return res.status(400).send("Envie exatamente 4 imagens.");
-      }
-
-      const caminhos = req.files.map(file => file.filename);
-      const idRegistro = req.body.id;
-
-      // garante que existe
-      await pool.promise().query(
-        "INSERT IGNORE INTO imagens (id) VALUES (?)",
-        [idRegistro]
-      );
-
-      const sql = `
-        UPDATE imagens 
-        SET caminho1 = ?, caminho2 = ?, caminho3 = ?, caminho4 = ? 
-        WHERE id = ?
-      `;
-
-      const [result] = await pool.promise().query(sql, [
-        caminhos[0],
-        caminhos[1],
-        caminhos[2],
-        caminhos[3],
-        idRegistro
-      ]);
-
-      console.log("RESULT:", result);
-
-      res.render("dashboard", { status: 'sucesso' });
-
-    } catch (error) {
-      console.error("Erro ao atualizar banco:", error);
-      res.status(500).send("Erro interno: " + error.message);
-    }
-});
-*/
-
-
-//enviar imagens pro servidor
-/*
-app.post("/validateupload", upload.array('imagens', 4), async  (req, res) => {
-    const pastaUploads = path.join(process.cwd(), "public/uploads");
-    
-    
-   
-    try {
-        // 🔥 apaga tudo dentro da pasta
-        const arquivos = fs.readdirSync(pastaUploads);
-
-        arquivos.forEach(file => {
-            const filePath = path.join(pastaUploads, file);
-            fs.unlinkSync(filePath);
-        });
-		console.log("uploads antigos removidos");
-        
-        // Como o front garante 4 arquivos, pegamos os nomes diretamente
-        const caminhos = [
-            req.files[0].filename,
-            req.files[1].filename,
-            req.files[2].filename,
-            req.files[3].filename
-        ];
-
-        // SQL: SET coluna1 = ?, coluna2 = ? ...
-        // Importante: use o WHERE para definir QUAL registro receberá essas fotos
-        const sql = "UPDATE imagens SET caminho1 = ?, caminho2 = ?, caminho3 = ?, caminho4 = ? WHERE id = ?";
-        
-        // O ID geralmente vem de um campo oculto (input type="hidden") no seu form
-        const idRegistro = req.body.id; 
-
-        // Executa a query passando o array de caminhos + o ID
-        await pool.promise().query(sql, [...caminhos, idRegistro]);
-
-        // Renderiza a view (o Toast deve ser tratado no EJS/HTML como vimos antes)
-        res.render("dashboard", { status: 'sucesso' });
-
-    } catch (error) {
-        console.error("Erro ao atualizar banco:", error);
-        res.status(500).send("Erro interno no servidor. " + error.message);
-    }
-    
-});
-*/
-
 app.get("/login", (req,res)=>{
   /*
   if(req.session.isLoged){
@@ -956,6 +896,40 @@ app.get('/logout', (req, res) => {
     res.clearCookie('connect.sid'); // Limpa o cookie da sessão
     res.redirect('/');
   });
+});
+
+
+
+
+app.get("/suporte", (req, res)=>{
+    res.status(200).render("suport")
+})
+
+app.get("/bot", async (req, res) => {
+    // Pega a pergunta enviada pelo usuário na URL (ex: /bot?pergunta=O que é node?)
+    const perguntaUsuario = req.query.pergunta || "Explique em poucas palavras como a IA funciona";
+
+    try {
+        const result = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            // Aqui você define as "regras" antes do conteúdo do usuário
+            systemInstruction: "Você é um assistente especializado em tecnologia. Responda de forma curta, clara e técnica.",
+            contents: [
+                { 
+                    role: "user", 
+                    parts: [{ text: perguntaUsuario }] 
+                }
+            ],
+        });
+
+        const texto = result.candidates[0].content.parts[0].text;
+        
+        res.send(texto);
+        console.log("Resposta enviada:", texto);
+    } catch (error) {
+        console.error("Erro no Gemini:", error);
+        res.status(500).send("Erro ao processar IA: " + error.message);
+    }
 });
 
 
