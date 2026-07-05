@@ -17,6 +17,10 @@
     ".css": {
       "enabled": true,
       "run": "vscode-css-language-server --stdio"
+    },
+    ".sql": {
+      "enabled": false,
+      "run": "sqls"
     }
   }
 }

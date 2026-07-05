@@ -203,6 +203,7 @@ pool.getConnection((err, connection) => {
 
 // Step 1: Importe partes dos modulos que quer usar
 import { MercadoPagoConfig, Preference } from "mercadopago";
+import MercadoPago from "mercadopago";
 import { Payment } from "mercadopago";
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
@@ -387,7 +388,7 @@ await pool.promise().query(
                      <tr>
                     <td>
                     <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-            id do pedido ${pedidoId}        
+            id do pedido ${paymentId}        
                     </p>
                     </td>
                     </tr>
@@ -483,6 +484,9 @@ app.get("/dash", async (req, res) => {
     const query3 = "SELECT * FROM pedidos WHERE status_pagamento = 'rejected'";
     const query4 = "SELECT * FROM pedidos WHERE status_pagamento = 'pending'";
     const queryUser = "SELECT * FROM usuarios WHERE user_id = 1";
+    
+    //colocar query de reembolsos aqui
+    const queryReembolsos = "SELECT * FROM reembolsos";
     try {
         // MUDANÇA AQUI: de 'db.query' para 'pool.promise().query'
         const [rows] = await pool.promise().query(query); 
@@ -490,12 +494,15 @@ app.get("/dash", async (req, res) => {
         const [rows3] = await pool.promise().query(query3);
         const [rows4] = await pool.promise().query(query4);
         const [rows5] = await pool.promise().query(queryUser);
+        //colocar execução reembolsos da query aqui
+        const [rows6] = pool.promise().query(queryReembolsos);
         
         const pedidosLimpos = JSON.parse(JSON.stringify(rows2));
         
         // Enviamos o JSON direto para o Handlebars
        // dados: rows5[0], admin: req.session.usuario.email_usuario
-        res.render("dashboard", { dados: JSON.stringify(rows), pedidos: pedidosLimpos, pedidos_falha: rows3, pedidos_pendentes: rows4, dadosUser: rows5[0], admin: req.session.usuario.email_u}); 
+       //enviar a resposta da query reembolsos no res.render abaixo
+        res.render("dashboard", { dados: JSON.stringify(rows), pedidos: pedidosLimpos, pedidos_falha: rows3, pedidos_pendentes: rows4, dadosUser: rows5[0], admin: req.session.usuario.email_u, reembolsos: rows6}); 
       
     } catch (err) {
         console.error(err);
@@ -931,6 +938,49 @@ app.get("/bot", async (req, res) => {
         res.status(500).send("Erro ao processar IA: " + error.message);
     }
 });
+
+app.get("/suporte/reembolso", (req, res)=>{
+    res.status(200).render("reembolso")
+})
+// 1 - criar rota pra receber os dados do formulario de reembolso
+// 2 - inserir os dados no banco e exibilos no dashboard
+// 3 - botão de enviar reembolso no dashboard chama /refund
+app.post("/reembolsauser", async (req,res)=>{
+    try{
+    const {email, payment_id, motivo} = req.body;
+    if(!email && !payment_id && !motivo){
+        return res.status(400).send("todos os campos são obrigatorios");
+    }
+    const sql = "INSERT INTO reembolsos (email, payment_id, motivo, status) VALUES (?, ?, ?, ?)";
+    const [result] = await pool.promise().query(sql, [email, payment_id, motivo, "pendente"])
+    return res.status(201).json({
+        message: "solicitação de reembolso enviada",
+        id: result.insertId
+    })
+    console.log(`solicitação de reembolso recebida, id: ${result.insertId}, email: ${email}, motivo: ${motivo}`);
+   }
+    catch(err){
+            console.log(`erro ao processar solicitação. ERRO: ${err.message}`)
+            return res.status(500).json({
+                erro: "erro interno do servidor"
+            })
+        
+    }
+})
+
+
+//essa rota refund vai ser chamada pelo dashboard
+app.post("/refund", (req, res)=>{
+    //import MercadoPago, { Payment } from 'mercadopago';
+const {email, payment_id, motivo} = req.body;
+//const client = new MercadoPago({ accessToken: process.env.ACCESS_TOKEN });
+
+  const payment = new Payment(client);
+  payment.cancel({
+      id: payment_id
+ }).then(console.log).catch(console.log);
+ 
+})
 
 
 app.use((req, res, next)=>{

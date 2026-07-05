@@ -1,0 +1,103 @@
+<div class="section grey lighten-4" style="padding: 50px 20px;">
+<div class="container">
+<div class="row">
+<div class="col s12 m10 l8 offset-m1 offset-l2">
+<div class="card z-depth-2" style="border-radius: 18px;">
+<div class="card-content center-align">
+<i class="material-icons" style="font-size: 60px; color: #ef6c00;">replay</i>
+<h3 style="color: #ef6c00; font-weight: 500; margin-top: 10px;">
+Solicitar Reembolso
+</h3>
+<p class="grey-text text-darken-1" style="font-size: 18px; margin-bottom: 35px;">
+Preencha os dados abaixo para solicitar o reembolso da sua compra realizada via Mercado Pago.
+</p>
+<div class="row">
+<form class="col s12" action="/reembolsauser" method="POST">
+<div class="input-field col s12">
+<i class="material-icons prefix orange-text text-darken-2">email</i>
+<input id="email" name="email" type="email" class="validate" required>
+<label for="email">Email utilizado na compra</label>
+</div>
+<div class="input-field col s12">
+<i class="material-icons prefix orange-text text-darken-2">confirmation_number</i>
+<input id="pedido_id" name="pedido_id" type="text" class="validate" required>
+<label for="pedido_id">ID da compra</label>
+</div>
+<div class="input-field col s12">
+<i class="material-icons prefix orange-text text-darken-2">description</i>
+<textarea id="motivo" name="motivo" class="materialize-textarea validate" required></textarea>
+<label for="motivo">Motivo do reembolso</label>
+</div>
+<div class="col s12" style="margin-top: 20px;">
+<button data-target="modal1" id="btn1" class="btn-large waves-effect waves-light green accent-4 modal-trigger" type="submit" style="width: 100%; border-radius: 14px; height: 62px; font-size: 22px; font-weight: 500;">
+SOLICITAR REEMBOLSO
+<i class="material-icons right">send</i>
+</button>
+</div>
+</form>
+</div>
+</div>
+<div class="card-action center-align grey lighten-4">
+<p class="grey-text text-darken-1" style="margin: 0;">
+<i class="material-icons tiny">lock</i>
+Solicitação segura processada via Mercado Pago
+</p>
+</div>
+</div>
+<div class="center-align" style="margin-top: 25px;">
+<p class="grey-text">
+O prazo de análise do reembolso pode variar conforme o método de pagamento utilizado.
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!--modal-->
+  <!-- Modal Structure -->
+  <div id="modal1" class="modal">
+    <div class="modal-content">
+      <h4>Modal Header</h4>
+      <p>A bunch of text</p>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
+    </div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const inputs = document.querySelectorAll('.validate');
+    const btn1 = document.getElementById('btn1');
+    const btnModal = document.getElementById('btnModal');
+
+    const modals = document.querySelectorAll('.modal');
+    M.Modal.init(modals);
+
+    // começa desabilitado
+    btn1.setAttribute('disabled', 'true');
+
+    function validarFormulario() {
+        let algumVazio = false;
+
+        inputs.forEach((input) => {
+            if (input.value.trim() === '') {
+                algumVazio = true;
+            }
+        });
+
+        btn1.disabled = algumVazio;
+    }
+
+    inputs.forEach((input) => {
+        input.addEventListener('input', validarFormulario);
+    });
+
+    // valida ao carregar
+    validarFormulario();
+
+});
+</script>
