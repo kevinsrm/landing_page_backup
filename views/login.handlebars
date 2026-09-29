@@ -1,78 +1,50 @@
-<div class="isNewLoginPage">
+<div class="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-12">
+  <div class="pointer-events-none absolute inset-0 bg-grid opacity-60"></div>
+  <div class="pointer-events-none absolute -top-32 left-1/2 h-[380px] w-[680px] -translate-x-1/2 rounded-full bg-brand-600/25 blur-[120px]"></div>
 
-  
-  <!-- glass panel form-->
-  <div class="flip-container">
-    
-  
-  
-  <!--login form-->
-      <div id="formcadastro2" class="row container glass-panel face back">
-        <h4 class="white-text light center">login</h4>
-    <form method="POST" action="/loginuser" class="col s12 containerrow">
-      <div class="row">
-        
-        
-        
-        
-        <div class="input-field col s12">
-          <input id="email1" type="email" class="validate" name="email" required>
-          
-          <label style="text-shadow: 0 0 5px black" class="white-text" for="email1">seu email</label>
+  <div class="relative w-full max-w-md animate-fade-up">
+    <a href="/" class="mb-8 flex items-center justify-center gap-2.5">
+      <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-600 text-white shadow-glow">{{icone "bolt" class="w-5 h-5"}}</span>
+      <span class="font-display text-lg font-bold tracking-tight text-white">{{nomeLoja}}</span>
+    </a>
+
+    <div class="card p-7 sm:p-8">
+      <div class="text-center">
+        <h1 class="font-display text-2xl font-bold text-white">Acessar painel</h1>
+        <p class="mt-1.5 text-sm text-slate-400">Área restrita ao administrador da loja.</p>
+      </div>
+
+      {{#if erro}}
+        <div class="mt-6 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+          {{icone "alert" class="mt-0.5 w-4 h-4 shrink-0"}}
+          <span>{{erro}}</span>
         </div>
-        
-        
-        
-    <div class="input-field col s12">
-      <input id="senha" type="password" class="validate" name="senha" required>
-      <label style="text-shadow: 0 0 5px black" class="white-text" for="senha">senha</label>
+      {{/if}}
+
+      <form method="POST" action="/loginuser" class="mt-6 space-y-5">
+        <div>
+          <label class="label" for="email1">E-mail</label>
+          <input id="email1" name="email" type="email" autocomplete="username" required class="field" placeholder="admin@suiloja.com">
+        </div>
+
+        <div>
+          <label class="label" for="senha">Senha</label>
+          <input id="senha" name="senha" type="password" autocomplete="current-password" required class="field" placeholder="••••••••">
+        </div>
+
+        <div>
+          <label class="label" for="2fa">Código 2FA</label>
+          <input id="2fa" name="doisfa" type="text" inputmode="numeric" maxlength="6" required class="field tracking-[0.3em]" placeholder="0000">
+        </div>
+
+        <button type="submit" class="btn-primary w-full">
+          {{icone "lock" class="w-4 h-4"}} Entrar
+        </button>
+      </form>
     </div>
-    
-    
-    
-            <div class="input-field col s12">
-        <input type="text" id="2fa" name="doisfa" required>
-        <label style="text-shadow: 0 0 5px black" class="white-text" for="2fa">2fa</label>
-        </div>
 
-        
-        <div class="input-field col s12">
-          <button class="btn-large btn-float blue waves-effect waves-light col s12" id="last_name" type="submit" class="validate">entrar</button>
-        </div>
-        
-        
-      
-    </form>
+    <p class="mt-6 text-center text-xs text-slate-600">
+      <a href="/" class="transition hover:text-slate-400">← Voltar para a loja</a>
+    </p>
   </div>
-  </div>
-  </div>
-  
-  <script>
-document.addEventListener('DOMContentLoaded', function() {
-  M.updateTextFields();
-  
-  setTimeout(() => {
-    M.updateTextFields();
-  }, 500);
-});
-</script>
-  
-  
-{{#if error}}
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    M.toast({
-      html: '{{error}}', 
-      displayLength: 4000, 
-      classes: 'rounded red accent-2'
-    });
-    
-    // Forçar o card a ficar no lado de LOGIN se houver erro de login
-    const card = document.getElementById("card");
-    card.classList.add("flipped");
-  });
-</script>
-{{/if}}
-
-
 </div>

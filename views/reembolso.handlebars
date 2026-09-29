@@ -1,103 +1,100 @@
-<div class="section grey lighten-4" style="padding: 50px 20px;">
-<div class="container">
-<div class="row">
-<div class="col s12 m10 l8 offset-m1 offset-l2">
-<div class="card z-depth-2" style="border-radius: 18px;">
-<div class="card-content center-align">
-<i class="material-icons" style="font-size: 60px; color: #ef6c00;">replay</i>
-<h3 style="color: #ef6c00; font-weight: 500; margin-top: 10px;">
-Solicitar Reembolso
-</h3>
-<p class="grey-text text-darken-1" style="font-size: 18px; margin-bottom: 35px;">
-Preencha os dados abaixo para solicitar o reembolso da sua compra realizada via Mercado Pago.
-</p>
-<div class="row">
-<form class="col s12" action="/reembolsauser" method="POST">
-<div class="input-field col s12">
-<i class="material-icons prefix orange-text text-darken-2">email</i>
-<input id="email" name="email" type="email" class="validate" required>
-<label for="email">Email utilizado na compra</label>
-</div>
-<div class="input-field col s12">
-<i class="material-icons prefix orange-text text-darken-2">confirmation_number</i>
-<input id="pedido_id" name="pedido_id" type="text" class="validate" required>
-<label for="pedido_id">ID da compra</label>
-</div>
-<div class="input-field col s12">
-<i class="material-icons prefix orange-text text-darken-2">description</i>
-<textarea id="motivo" name="motivo" class="materialize-textarea validate" required></textarea>
-<label for="motivo">Motivo do reembolso</label>
-</div>
-<div class="col s12" style="margin-top: 20px;">
-<button data-target="modal1" id="btn1" class="btn-large waves-effect waves-light green accent-4 modal-trigger" type="submit" style="width: 100%; border-radius: 14px; height: 62px; font-size: 22px; font-weight: 500;">
-SOLICITAR REEMBOLSO
-<i class="material-icons right">send</i>
-</button>
-</div>
-</form>
-</div>
-</div>
-<div class="card-action center-align grey lighten-4">
-<p class="grey-text text-darken-1" style="margin: 0;">
-<i class="material-icons tiny">lock</i>
-Solicitação segura processada via Mercado Pago
-</p>
-</div>
-</div>
-<div class="center-align" style="margin-top: 25px;">
-<p class="grey-text">
-O prazo de análise do reembolso pode variar conforme o método de pagamento utilizado.
-</p>
-</div>
-</div>
-</div>
-</div>
-</div>
+{{!-- ======================= NAV ======================= --}}
+<header class="sticky top-0 z-40 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+    <a href="/" class="flex items-center gap-2.5">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">{{icone "bolt" class="w-5 h-5"}}</span>
+      <span class="font-display text-lg font-bold tracking-tight text-white">{{nomeLoja}}</span>
+    </a>
+    <a href="/" class="btn-ghost px-4 py-2 text-sm">{{icone "arrow-left" class="w-4 h-4"}} Voltar</a>
+  </div>
+</header>
 
+<div class="relative mx-auto max-w-2xl px-4 py-14 sm:px-6">
+  <div class="pointer-events-none absolute -top-20 left-1/2 h-[320px] w-[560px] -translate-x-1/2 rounded-full bg-brand-600/20 blur-[110px]"></div>
 
-<!--modal-->
-  <!-- Modal Structure -->
-  <div id="modal1" class="modal">
-    <div class="modal-content">
-      <h4>Modal Header</h4>
-      <p>A bunch of text</p>
-    </div>
-    <div class="modal-footer">
-      <a href="#!" class="modal-close waves-effect waves-green btn-flat">Agree</a>
-    </div>
+  <div class="relative animate-fade-up text-center">
+    <span class="eyebrow">{{icone "refund" class="w-3.5 h-3.5"}} Garantia de 7 dias</span>
+    <h1 class="section-title mt-4">Solicitar reembolso</h1>
+    <p class="mt-3 text-slate-400">
+      Preencha os dados abaixo. Nossa equipe analisa a solicitação e o estorno é feito pelo próprio Mercado Pago.
+    </p>
   </div>
 
+  <form id="form-reembolso" class="card relative mt-8 space-y-5 p-6 sm:p-8">
+    <div>
+      <label class="label" for="email">E-mail usado na compra</label>
+      <input id="email" name="email" type="email" required class="field validate" placeholder="voce@email.com">
+    </div>
+
+    <div>
+      <label class="label" for="payment_id">ID do pagamento</label>
+      <input id="payment_id" name="payment_id" type="text" required class="field validate" placeholder="Ex: 153243392142">
+      <p class="mt-1.5 text-xs text-slate-500">Está no comprovante do Pix ou no e-mail de confirmação da compra.</p>
+    </div>
+
+    <div>
+      <label class="label" for="motivo">Motivo da solicitação</label>
+      <textarea id="motivo" name="motivo" rows="5" required class="field validate resize-y" placeholder="Conte o que aconteceu…"></textarea>
+    </div>
+
+    <div id="retorno" class="hidden items-start gap-2 rounded-xl border p-3 text-sm"></div>
+
+    <button id="btn-enviar" type="submit" class="btn-primary w-full">
+      {{icone "send" class="w-4 h-4"}} Enviar solicitação
+    </button>
+
+    <p class="flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+      {{icone "lock" class="w-3.5 h-3.5"}} Solicitação segura · processada via Mercado Pago
+    </p>
+  </form>
+
+  <p class="mt-6 text-center text-xs text-slate-600">
+    O prazo de análise pode variar conforme o método de pagamento utilizado.
+  </p>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(() => {
+  const formulario = document.getElementById("form-reembolso");
+  const botao = document.getElementById("btn-enviar");
+  const retorno = document.getElementById("retorno");
+  const obrigatorios = Array.from(document.querySelectorAll(".validate"));
 
-    const inputs = document.querySelectorAll('.validate');
-    const btn1 = document.getElementById('btn1');
-    const btnModal = document.getElementById('btnModal');
+  function sincronizar() {
+    botao.disabled = obrigatorios.some((campo) => campo.value.trim() === "");
+  }
+  obrigatorios.forEach((campo) => campo.addEventListener("input", sincronizar));
+  sincronizar();
 
-    const modals = document.querySelectorAll('.modal');
-    M.Modal.init(modals);
+  formulario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    botao.disabled = true;
+    botao.textContent = "Enviando…";
 
-    // começa desabilitado
-    btn1.setAttribute('disabled', 'true');
+    const corpo = {
+      email: document.getElementById("email").value.trim(),
+      payment_id: document.getElementById("payment_id").value.trim(),
+      motivo: document.getElementById("motivo").value.trim(),
+    };
 
-    function validarFormulario() {
-        let algumVazio = false;
+    try {
+      const resposta = await fetch("/reembolsauser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(corpo),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) throw new Error(dados.erro || "Não foi possível enviar a solicitação.");
 
-        inputs.forEach((input) => {
-            if (input.value.trim() === '') {
-                algumVazio = true;
-            }
-        });
-
-        btn1.disabled = algumVazio;
+      retorno.className = "flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200";
+      retorno.textContent = "Solicitação recebida! Você receberá a resposta no e-mail informado.";
+      formulario.reset();
+    } catch (erro) {
+      retorno.className = "flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200";
+      retorno.textContent = erro.message;
+      botao.disabled = false;
+      botao.innerHTML = "Enviar solicitação";
     }
-
-    inputs.forEach((input) => {
-        input.addEventListener('input', validarFormulario);
-    });
-
-    // valida ao carregar
-    validarFormulario();
-
-});
+  });
+})();
 </script>

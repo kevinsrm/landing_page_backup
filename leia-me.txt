@@ -1,220 +1,163 @@
-o servidor deve ser hospedado no railway ou render pois a configuração
-é mais facil
-apos subir o servidor você deve criar o banco de dados manualmente
-se for realizar testes de pagamento utilize a guia anonima para não afetar sua conta real
+==============================================================
+ LOJA — LANDING PAGE + CHECKOUT TRANSPARENTE PIX (MERCADO PAGO)
+==============================================================
 
-lembre-se de substituir as credenciais do .env pelas suas proprias
-
-Para criar uma aplicação e obter o seu Access Token no Checkout Pro do Mercado Pago, o processo central é feito através do Painel do Desenvolvedor.
-​Aqui estão as URLs essenciais para esse processo:
-​1. Criar a Aplicação e Gerenciar Credenciais
-​Esta é a página principal onde você cria o projeto para obter o Client ID, Client Secret e, consequentemente, o Access Token.
-​URL: https://www.mercadopago.com.br/developers/panel/applications
-
-
--------------------------------------------------------------------
-
-para entrar no dashboard é necessario colocar /dash no fim da url
-ex: seusite.com.br/dash
-
-para fazer login use essas credenciais
-
-email: admin@eu.com
-senha: resident8512
-2fa: 8512
-
-
-
--------------------------------------------------------------------
-
-conta de vendedor
-
-conta de teste para teste
-
-Vendedor
-
-País
-
-BrasilBrasil
-User ID
-
-3279351403
-Usuário
-
-TESTUSER7041342846856911576
-Senha
-
-y9kh17lKe4
-Código de verificação
-
-351403
-
+O QUE MUDOU NESTA VERSÃO
 --------------------------------------------------------------
-
-conta de comprador
-conta de teste pra Brasil
-
-Comprador
-
-País
-
-BrasilBrasil
-User ID
-
-3280000992
-Usuário
-
-TESTUSER5637109281825836510
-Senha
-
-Q1051QWQzE
-Código de verificação
-
-000992
-
------------------------------------------------------------
-
-para ativar a opção de pagar por pix no checkout você deve ativar o pix na sua conta mercado pago.
-
------------------------------------------------------------
-
-Cartões de teste
-
-Brasil
-Cartão Mastercard
-
-Número
-
-5031 4332 1540 6351
-
-Data de validade
-
-11/30
-
-Código de segurança
-
-123
-
-Cartão Visa
-
-Número
-
-4235 6477 2802 5682
-
-Data de validade
-
-11/30
-
-Código de segurança
-
-123
-
-Cartão American Express
-
-Número
-
-3753 651535 56885
-
-Data de validade
-
-11/30
-
-Código de segurança
-
-1234
-
-Cartão Elo Debito
-
-Número
-
-5067 7667 8388 8311
-
-Data de validade
-
-11/30
-
-Código de segurança
-
-123
-
-Para testar diferentes resultados de pagamento, insira o status desejado no nome do titular do cartão:
-
-Pagamento aprovado
-
-Status de pagamento
-
-APRO
-
-Documento de identidade
-
-12345678909
-
-Recusado por erro geral
-
-Status de pagamento
-
-OTHE
-
-Documento de identidade
-
-12345678909
-
-Pagamento pendente
-
-Status de pagamento
-
-CONT
-
-Documento de identidade
-
--
-
-Recusado com validação para autorizar
-
-Status de pagamento
-
-CALL
-
-Documento de identidade
-
--
-
-Recusado por quantia insuficiente
-
-Status de pagamento
-
-FUND
-
-Documento de identidade
-
--
-
-Recusado por código de segurança inválido
-
-Status de pagamento
-
-SECU
-
-Documento de identidade
-
--
-
-Recusado por problema com a data de vencimento
-
-Status de pagamento
-
-EXPI
-
-Documento de identidade
-
--
-
-Recusado por erro no formulário
-
-Status de pagamento
-
-FORM
-
-Documento de identidade
-
--
+1. FRONT-END: Materialize CSS foi removido e substituído por Tailwind CSS v4
+   (visual escuro, moderno e elegante). O CSS compilado fica em
+   public/css/app.css e a fonte de estilos é src/input.css.
+
+2. CHECKOUT: o Checkout Pro (redirecionamento) foi substituído pelo
+   CHECKOUT TRANSPARENTE com UM único método de pagamento: PIX.
+   O cliente recebe na própria página o QR Code + o código "copia e cola".
+   Cartão, boleto e saldo Mercado Pago foram removidos.
+
+3. ENTREGA AUTOMÁTICA: quando o pagamento é APROVADO o servidor envia
+   automaticamente um e-mail com o botão/link de DOWNLOAD do script.
+   O envio é idempotente (não duplica) e pode ser reenviado pelo painel.
+
+4. PAINEL ADMIN (/dash): reformulado (sidebar, cards, gráfico, abas,
+   tabelas com detalhes) e com uma nova seção "Link de download",
+   onde você define o link que vai no e-mail.
+
+5. BANCO: novas colunas/tabelas (link_download, email_enviado,
+   valor_total, reembolsos). O servidor aplica sozinho na inicialização,
+   mas você também pode rodar o SQL manualmente (veja abaixo).
+
+
+COMO RODAR
+--------------------------------------------------------------
+1) npm install
+
+2) Copie .env.example para .env e preencha:
+     ACCESS_TOKEN        -> Mercado Pago (painel do desenvolvedor)
+     DB_*                -> seu banco MySQL/MariaDB
+     API_KEY             -> Mailgun (envio dos e-mails)
+     MAILGUN_DOMAIN      -> domínio remetente no Mailgun
+     SECRET              -> segredo da sessão
+     SITE_URL            -> URL pública HTTPS do site (para o webhook)
+     DOWNLOAD_LINK       -> link padrão de download (fallback do banco)
+
+3) Banco de dados:
+     - importe banco_de_dados_aqui/backup_tabelas.sql (se for um banco novo)
+     - rode a migração:
+       mysql -u USUARIO -p NOME_DO_BANCO < banco_de_dados_aqui/migracoes/001_pix_transparente_e_link_download.sql
+       (o servidor também aplica essas alterações automaticamente)
+
+4) CSS (só é necessário se você editar o visual):
+     npm run dev:css     -> recompila o Tailwind ao salvar
+     npm run build:css   -> gera o public/css/app.css minificado
+   O app.css já vai commitado, então em produção basta `npm start`.
+
+5) Subir o servidor:
+     npm start           (ou `npm run dev` com nodemon)
+
+
+MODO DEMONSTRAÇÃO (sem banco e sem credenciais)
+--------------------------------------------------------------
+   DB_MOCK=true MP_MOCK=true npm start
+
+ - DB_MOCK=true : usa um banco em memória com dados fictícios
+ - MP_MOCK=true : simula o Mercado Pago (QR Code fictício que é
+                  "aprovado" depois de ~15 segundos)
+Útil para ver o layout e testar o fluxo do Pix. NUNCA use em produção.
+
+
+WEBHOOK DO MERCADO PAGO (importante!)
+--------------------------------------------------------------
+O aviso de pagamento aprovado chega por webhook. Sem ele o sistema ainda
+funciona (a página fica consultando o status a cada 4s), mas o e-mail
+pode atrasar se o cliente fechar a página.
+
+1. Acesse https://www.mercadopago.com.br/developers/panel/applications
+2. Abra a sua aplicação -> Webhooks
+3. Em "Pagamentos" informe:  https://SEU-DOMINIO/webhook
+4. Salve. O SITE_URL do .env precisa ser o mesmo domínio (HTTPS).
+
+
+FLUXO DO PAGAMENTO
+--------------------------------------------------------------
+1. O cliente preenche nome, e-mail e CPF na landing page.
+2. POST /pagamento/pix cria o pagamento no Mercado Pago e devolve
+   qr_code (copia e cola) + qr_code_base64 (imagem) + expiração.
+3. A página mostra o QR Code e consulta GET /pagamento/status/:pedidoId
+   a cada 4 segundos.
+4. O Mercado Pago chama POST /webhook quando o status muda.
+5. Status "approved" (uma única vez) -> e-mail com o link de download.
+
+
+PAINEL ADMIN
+--------------------------------------------------------------
+   URL:  seusite.com.br/dash
+   login: admin@eu.com
+   senha: resident8512
+   2fa:   8512
+
+Seções:
+ - Visão geral ....... faturamento, vendas do dia, gráfico de 7 dias
+ - Vendas ............ abas aprovadas / pendentes / recusadas
+                       (reenviar download, cobrar, recuperar venda, rastreio)
+ - Reembolsos ........ solicitações dos clientes + estorno no Mercado Pago
+ - Produto ........... preços, descrição e 4 imagens da landing page
+ - Link de download .. link enviado no e-mail quando o pagamento é aprovado
+
+
+ROTAS
+--------------------------------------------------------------
+GET  /                          landing page
+POST /pagamento/pix             cria o pagamento Pix (QR + copia e cola)
+GET  /pagamento/status/:id      consulta o status do pagamento
+POST /webhook                   notificação do Mercado Pago
+GET  /success /pending /fail    páginas de retorno
+GET  /login  POST /loginuser    autenticação do admin
+GET  /logout                    sair
+GET  /dash                      painel administrativo
+POST /painel/link-download      salva o link de download do e-mail
+POST /painel/reenviar-download  reenvia o e-mail com o link
+POST /validateupload            atualiza produto (preços/descrição/imagens)
+POST /enviar-email-rc           cobra pagamento pendente
+POST /enviar-email-rv           recupera venda recusada
+POST /enviar-rastreio           envia código de rastreio (entrega física)
+POST /reembolsauser             cliente solicita reembolso
+POST /refund                    estorna o pagamento no Mercado Pago
+GET  /suporte  /suporte/reembolso
+GET  /health                    healthcheck
+
+
+ESTRUTURA
+--------------------------------------------------------------
+index.js                 rotas e view engine
+lib/db.js                acesso ao banco (e modo demo em memória)
+lib/pagamentos.js        Mercado Pago: criação/consulta do Pix + aprovação
+lib/email.js             Mailgun + templates (download, cobrança, rastreio)
+lib/icones.js            ícones SVG usados nas views
+src/input.css            tema Tailwind (build -> public/css/app.css)
+views/                   páginas Handlebars
+views/partials/          partials reutilizáveis (tabela de pedidos)
+
+
+CONTAS DE TESTE (MERCADO PAGO)
+--------------------------------------------------------------
+Para testar o Pix, ative o Pix na sua conta Mercado Pago e use as
+credenciais de TESTE (access token de teste no .env). Use uma aba anônima
+para não misturar com a sua conta real.
+
+Vendedor (teste)
+  User ID : 3279351403
+  Usuário : TESTUSER7041342846856911576
+  Senha   : y9kh17lKe4
+  Código  : 351403
+
+Comprador (teste - Brasil)
+  User ID : 3280000992
+  Usuário : TESTUSER5637109281825836510
+  Senha   : Q1051QWQzE
+  Código  : 000992
+
+Dica: para testar a aprovação do Pix em ambiente de teste, use a conta de
+comprador acima no app/simulador do Mercado Pago. Os cartões de teste
+não são mais necessários — o único método habilitado é o Pix.
+
+Hospedagem sugerida: Railway ou Render (configure o SITE_URL com o domínio
+HTTPS gerado e cadastre o webhook apontando para /webhook).

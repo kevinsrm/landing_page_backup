@@ -1,33 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title> Aplicativo de exemplo </title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-<link rel="stylesheet" href="/css/custom.css?v=1.1">
-<script src="
-https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js
-"></script>
-<style>
-
-    /* Remove o posicionamento absoluto e fixa o label acima */
- 
-
-/* Adiciona um pequeno espaçamento entre o label e o input */
-.input-field input {
-  margin-top: 0px !important;
-}
-
-</style>
-</head>​​
-<body>
-
-    {{{body}}}
-
-<script src="https://sdk.mercadopago.com/js/v2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-</body>​​
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#020617">
+  <title>{{#if titulo}}{{titulo}} · {{nomeLoja}}{{else}}{{nomeLoja}}{{/if}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%234f46e5'/%3E%3Cpath d='M12 5l7 7-7 7-7-7z' fill='white'/%3E%3C/svg%3E">
+</head>
+<body class="min-h-dvh bg-slate-950 text-slate-200">
+  {{{body}}}
+</body>
 </html>

@@ -1,995 +1,628 @@
+/**
+ * index.js — servidor Express
+ * ------------------------------------------------------------------
+ * Landing page + Checkout Transparente PIX (Mercado Pago) + painel admin.
+ *
+ * Rotas principais:
+ *   GET  /                          landing page
+ *   POST /pagamento/pix             cria o pagamento PIX (QR Code + copia e cola)
+ *   GET  /pagamento/status/:id      polling do status do pagamento
+ *   POST /webhook                   notificação do Mercado Pago
+ *   GET  /dash                      painel administrativo
+ *   POST /painel/link-download      salva o link enviado no e-mail de download
+ * ------------------------------------------------------------------
+ */
 import express from "express";
-import {engine} from "express-handlebars";
-import { randomUUID } from 'node:crypto';
-import dotenv from 'dotenv';
-import crypto from "crypto";
-import multer from "multer";
-import fs from "fs";
+import { engine } from "express-handlebars";
 import session from "express-session";
-import FormData from "form-data"; // form-data v4.0.1
-import Mailgun from "mailgun.js"; // mailgun.js v11.1.0
+import multer from "multer";
+import crypto from "crypto";
+import dotenv from "dotenv";
+import { randomUUID } from "node:crypto";
+import { PaymentRefund } from "mercadopago";
+
+import * as db from "./lib/db.js";
+import {
+  MP_MOCK,
+  apenasNumeros,
+  client,
+  consultarPagamento,
+  criarPagamentoPix,
+  parsePreco,
+  reenviarEmailDownload,
+  sincronizarPedido,
+} from "./lib/pagamentos.js";
+import { icone } from "./lib/icones.js";
+import {
+  enviarEmailPendente,
+  enviarEmailRecusado,
+  enviarEmailRastreio,
+  getLinkDownload,
+} from "./lib/email.js";
 
 dotenv.config();
-import { GoogleGenAI } from "@google/genai";
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_API_KEY
-});
-import path from 'path';
 
 const app = express();
-
-
-app.use(session({
-  secret: process.env.SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // true só com HTTPS
-    maxAge: 1000 * 60 * 60 // 1h
-  }
-}));
-
-
 const port = process.env.PORT || 3000;
-const access_token = process.env.ACCESS_TOKEN;
+const NOME_LOJA = process.env.NOME_LOJA || "kevinsrm.shop";
 
-//preciso tornar o nome das imagens em uma variavel global pra usar na rota validate upload e salvar no banco de dados
-/*
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads')
-  },
-  filename: function (req, file, cb) {
-    const uniqueid = crypto.randomUUID();
-    cb(null, file.fieldname + '-' + uniqueid + file.originalname)
-  }
-})
-const upload = multer({ storage: storage });
-*/
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads');
-  },
-  filename: function (req, file, cb) {
-    const uniqueid = crypto.randomUUID();
-    const nomeArquivo = file.fieldname + '-' + uniqueid + file.originalname;
+/* ------------------------------------------------------------------ */
+/* Middlewares                                                         */
+/* ------------------------------------------------------------------ */
 
-    // salva no req (seguro por requisição)
-    if (!req.nomesImagens) {
-      req.nomesImagens = [];
-    }
+app.use(
+  session({
+    secret: process.env.SECRET || "troque-este-segredo",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false, maxAge: 1000 * 60 * 60 * 4 },
+  })
+);
 
-    req.nomesImagens.push(nomeArquivo);
-
-    cb(null, nomeArquivo);
-  }
-});
-
-const upload = multer({ storage: storage });
-
-
-
-// database.js
-import mysql from 'mysql2';
-app.use(express.static('public'));
-app.get("/testando", (req, res)=>{
-    res.send("funcionando");
-})
-// Configure and create the pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  connectionLimit: 50,
-  ssl:{
-  rejectUnauthorized: false,
-  ca_certificate: process.env.CA_CERTIFICATE
-  } // Adjust based on needs
-});
-
-
-
-app.get("/sendteste", (req, res)=>{
-    
-const pedidoId = "yyeyegh473773737377";
-async function sendSimpleMessage() {
-  const mailgun = new Mailgun(FormData);
-  const mg = mailgun.client({
-    username: "api",
-    key: process.env.API_KEY,
-    // When you have an EU-domain, you must specify the endpoint:
-    // url: "https://api.eu.mailgun.net"
-  });
-  try {
-    const data = await mg.messages.create("contato.kevinsrm.shop", {
-        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
-      from: "no-reply@contato.kevinsrm.shop",
-      to: ["kevinborrachao@gmail.com"],
-      subject: "Seu pagamento já foi aprovado",
-      text: "Seu pagamento foi aprovado",
-      html: `
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Pagamento Confirmado</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f6f9fc; padding: 20px 0;">
-        <tr>
-            <td align="center">
-                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                    <tr>
-                        <td align="center" style="background-color: #27ae60; padding: 40px 20px;">
-                            <div style="font-size: 50px; color: #ffffff; margin-bottom: 10px;">✔</div>
-                            <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
-                        </td>
-                    </tr>
-                    <tr>
-                    <td>
-                    <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-            id do pedido ${pedidoId}        
-                    </p>
-                    </td>
-                    </tr>
-                    
-                    <tr>
-                        <td style="padding: 40px 30px;">
-                            <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-                                Olá, tudo bem?
-                            </p>
-                            <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-                                Boas notícias! Recebemos seu pagamento e seu script ja está disponível no botão abaixo. Atenção, todos os guias de instalação estão dentro do script.
-                            </p>
-                            <div style="display: flex; width: 100%; justify-content: center; align-items: center">
-                            <a class="center" 
-   href="https://drive.google.com/file/d/1RGMlXew0zqldWRg38njBwOM8DJeDQ4rT/view?usp=drivesdk" 
-   style="width:300px; height: 90px; border-radius: 20px; background-color: #6367FF; color: #ffffff; font-weight: 700; font-size: 30px; display: flex; justify-content: center; align-items: center; text-decoration: none;">
-   BAIXAR SCRIPT
-</a>
-
-                            </div>
-                            
-                           
-
-                            <p style="font-size: 14px; color: #9b9b9b; margin-top: 30px; text-align: center;">
-                                Se tiver qualquer dúvida, basta responder a este e-mail.
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td align="center" style="padding: 20px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
-                            <p style="font-size: 12px; color: #bdc3c7; margin: 0;">
-                                &copy; 2026 kevinsrm.shop. Todos os direitos reservados.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-`,
-    });
-
-    console.log(data); // logs response data
-    res.send("email enviado com sucesso")
-  } catch (error) {
-      res.send("falha ao enviar email")
-    console.log(error); //logs any error
-  }
-}
-sendSimpleMessage()
-})
-
-
-
-// Exemplo com Pool
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('Erro ao obter conexão do pool:', err.message);
-    return;
-  }
-  console.log('Conexão do pool estabelecida com sucesso!');
-  
-  // Importante: Libere a conexão de volta ao pool após o teste
-  connection.release();
-});
-
-
-
-// Step 1: Importe partes dos modulos que quer usar
-import { MercadoPagoConfig, Preference } from "mercadopago";
-import MercadoPago from "mercadopago";
-import { Payment } from "mercadopago";
-app.use(express.urlencoded({extended: true}));
+app.use(express.static("public"));
+app.get("/health", (req, res) => res.json({ ok: true, demo: db.DB_MOCK || MP_MOCK }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// Step 2: Inicializa o objeto client
-const client = new MercadoPagoConfig({
-//esse é o access token de credenciais de produção
-	accessToken: access_token,
-	options: { timeout: 30000 },
+
+app.use((req, res, next) => {
+  res.locals.nomeLoja = NOME_LOJA;
+  next();
 });
 
-app.post("/create-preference", async (req,res)=>{
-const preference = new Preference(client);
-const dados = req.body;
-const meuPedidoId = randomUUID();
-const emailUser = dados.email;
-if (!dados.nome || !dados.email || !dados.cpf) {
-  return res.status(400).send("Dados inválidos");
-}
-
-await pool.promise().query(
-  `INSERT INTO pedidos 
-  (id, status_pagamento, nome, email, cpf, telefone, endereco, numero, bairro, complemento, cidade, estado, cep)
-  VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [
-    meuPedidoId,
-    dados.nome,
-    dados.email,
-    dados.cpf,
-    dados.telefone,
-    dados.endereco,
-    dados.numero,
-    dados.bairro,
-    dados.complemento,
-    dados.cidade,
-    dados.estado,
-    dados.cep
-  ]
-);
-
-preference.create({
-  body: {
-    items: [
-      {
-        title: 'Meu produto',
-        quantity: 1,
-        //esse é o frete que vem de uma tabela do banco
-        unit_price: 100
-      }
-    ],
-     external_reference: `${meuPedidoId}#${emailUser}`,
-     payment_methods: {
-        excluded_payment_types: [],
-        excluded_payment_methods: [],
-        installments: 12
-    },
-      shipments: {
-  mode: 'not_specified',
-  cost: Number(process.env.FRETE), // Custo fixo que você definiu
-},
-   back_urls: {
-                success: `${process.env.SITE_URL}/success`, // Altere para sua URL >
-                failure: `${process.env.SITE_URL}/fail`,
-                pending: `${process.env.SITE_URL}/pending`
-            },
-	     auto_return: "approved",
-  }
-})
-.then((data) => {
-console.log(data)
-return res.redirect(data.init_point);
-/*
-res.status(200).json({
-preference_id: data.id,
-preference_url: data.init_point
-})
-*/
-})
-.catch((error)=>{
-res.status(500).json({"error": "erro ao criar preference"})
+/* Upload das imagens do produto (até 4). */
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "public/uploads"),
+  filename: (req, file, cb) => cb(null, `${file.fieldname}-${crypto.randomUUID()}${file.originalname}`),
 });
-})
+const upload = multer({ storage });
 
+/* ------------------------------------------------------------------ */
+/* View engine                                                         */
+/* ------------------------------------------------------------------ */
 
-app.engine('handlebars', engine({
+app.engine(
+  "handlebars",
+  engine({
+    partialsDir: "views/partials",
     helpers: {
-        // Compara se são iguais
-        eq: (v1, v2) => v1 === v2,
-        
-        // Inverte o valor booleano (resolve o erro "missing helper not")
-        not: (v) => !v,
-        
-        // Verifica se as duas condições são verdadeiras
-        and: (v1, v2) => v1 && v2,
-        
-        // Exemplo extra: Diferente de
-        ne: (v1, v2) => v1 !== v2
-    }
-}));
-
-app.set('view engine', 'handlebars');
-app.set('views', 'views') ;
-
-app.get("/", async (req,res)=>{
-try{
-    let sql = "SELECT caminho1, caminho2, caminho3, caminho4 FROM imagens WHERE id = 1";
-    //aqui
-    const dados_sql1 = "SELECT preco_sem_desconto, preco_com_desconto, descricao FROM home WHERE id = 1";
-      let [resultadoHome1] = await pool.promise().query(dados_sql1);
-    
-    let [rows] = await pool.promise().query(sql)
-res.render("home", {imagem: rows[0], resultado_home: resultadoHome1[0]});
-}
-catch(err){
-    console.log("ocorreu um erro na rota / : " + err.message);
-}
-})
-
-app.get("/success", async (req, res)=>{
-try{
-const payment = new Payment(client);
-  const paymentId = req.query.payment_id;
-  if (!paymentId) {
-  return res.render("pending");
-}
-  const data = await payment.get({ id: paymentId });
-  if (!data || !data.id) {
-  return res.render("fail");
-}
-if (!data.external_reference || !data.external_reference.includes("#")) {
-  return res.render("fail");
-}
-
-const [pedidoId, emailUsuario] = data.external_reference.split("#");
-  
-  
-  const status = data.status;
-  if (!pedidoId) {
-  return res.render("fail");
-}
-await pool.promise().query(
-  `UPDATE pedidos
-   SET payment_id = ?, status_pagamento = ?
-   WHERE id = ?`,
-  [paymentId, status, pedidoId]
+      icone,
+      array: (...args) => args.slice(0, -1),
+      eq: (a, b) => a === b,
+      ne: (a, b) => a !== b,
+      not: (v) => !v,
+      and: (a, b) => a && b,
+      or: (a, b) => a || b,
+      gt: (a, b) => Number(a) > Number(b),
+      json: (v) => JSON.stringify(v ?? []),
+      moeda: (v) => formatarBRL(v),
+      dataHora: (v) => formatarData(v),
+      dataCurta: (v) => formatarData(v, { hora: false }),
+      iniciais: (nome) =>
+        String(nome || "?")
+          .trim()
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((p) => p[0]?.toUpperCase() || "")
+          .join(""),
+      resumo: (texto, tamanho = 140) => {
+        const t = String(texto || "");
+        return t.length > tamanho ? `${t.slice(0, tamanho).trimEnd()}…` : t;
+      },
+    },
+  })
 );
-  console.log("informações do payment_id: \n" + data);
-  if (status === "approved") {
-    //enviar um email pro usuario confirmando pagamento
-   try {
-  async function sendSimpleMessage() {
-  const mailgun = new Mailgun(FormData);
-  const mg = mailgun.client({
-    username: "api",
-    key: process.env.API_KEY,
-    // When you have an EU-domain, you must specify the endpoint:
-    // url: "https://api.eu.mailgun.net"
-  });
+app.set("view engine", "handlebars");
+app.set("views", "views");
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+
+function formatarBRL(valor) {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return "R$ 0,00";
+  return numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatarData(valor, { hora = true } = {}) {
+  if (!valor) return "—";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "—";
+  const pad = (n) => String(n).padStart(2, "0");
+  const dia = `${pad(data.getDate())}/${pad(data.getMonth() + 1)}/${data.getFullYear()}`;
+  return hora ? `${dia} ${pad(data.getHours())}:${pad(data.getMinutes())}` : dia;
+}
+
+function emailValido(email = "") {
+  return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(String(email).trim());
+}
+
+/** Converte a linha do banco no objeto usado pelas views. */
+function viewModelPedido(pedido) {
+  return JSON.parse(
+    JSON.stringify({
+      ...pedido,
+      valor_formatado: formatarBRL(pedido.valor_total),
+      data_formatada: formatarData(pedido.data_pedido),
+      email_enviado: Number(pedido.email_enviado) === 1,
+    })
+  );
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.usuario) return res.redirect("/login");
+  return next();
+}
+
+/* ------------------------------------------------------------------ */
+/* LANDING PAGE                                                        */
+/* ------------------------------------------------------------------ */
+
+app.get("/", async (req, res, next) => {
   try {
-    const data = await mg.messages.create("contato.kevinsrm.shop", {
-        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
-      from: "no-reply@contato.kevinsrm.shop",
-      to: [emailUsuario],
-      subject: "Seu pagamento já foi aprovado",
-      text: "Seu pagamento foi aprovado",
-      html: `
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Pagamento Confirmado</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f6f9fc; padding: 20px 0;">
-        <tr>
-            <td align="center">
-                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                    <tr>
-                        <td align="center" style="background-color: #27ae60; padding: 40px 20px;">
-                            <div style="font-size: 50px; color: #ffffff; margin-bottom: 10px;">✔</div>
-                            <h1 style="color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Pagamento Confirmado</h1>
-                        </td>
-                    </tr>
-                     <tr>
-                    <td>
-                    <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-            id do pedido ${paymentId}        
-                    </p>
-                    </td>
-                    </tr>
-                    
-                    <tr>
-                        <td style="padding: 40px 30px;">
-                            <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-                                Olá, tudo bem?
-                            </p>
-                            <p style="font-size: 16px; color: #4a4a4a; line-height: 1.6; margin: 0 0 20px 0;">
-                                Boas notícias! Recebemos seu pagamento e seu script ja está disponível no botão abaixo. Atenção, todos os guias de instalação estão dentro do script.
-                            </p>
-                            <div style="display: flex; width: 100%; justify-content: center; align-items: center">
-                            <a class="center" 
-   href="https://drive.google.com/file/d/1RGMlXew0zqldWRg38njBwOM8DJeDQ4rT/view?usp=drivesdk" 
-   style="width:300px; height: 90px; border-radius: 20px; background-color: #6367FF; color: #ffffff; font-weight: 700; font-size: 30px; display: flex; justify-content: center; align-items: center; text-decoration: none;">
-   BAIXAR SCRIPT
-</a>
+    const [home, imagens] = await Promise.all([db.getHome(), db.getImagens()]);
+    const preco = parsePreco(home?.preco_com_desconto);
+    const precoAntigo = parsePreco(home?.preco_sem_desconto);
+    const desconto = precoAntigo && precoAntigo > preco ? Math.round(((precoAntigo - preco) / precoAntigo) * 100) : 0;
 
-                            </div>
-                            
-                           
-
-                            <p style="font-size: 14px; color: #9b9b9b; margin-top: 30px; text-align: center;">
-                                Se tiver qualquer dúvida, basta responder a este e-mail.
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td align="center" style="padding: 20px; background-color: #fafafa; border-top: 1px solid #eeeeee;">
-                            <p style="font-size: 12px; color: #bdc3c7; margin: 0;">
-                                &copy; 2026 kevinsrm.shop. Todos os direitos reservados.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-`,
+    res.render("home", {
+      titulo: home?.nome || "Produto",
+      produto: home || {},
+      imagem: imagens || {},
+      preco_formatado: formatarBRL(preco ?? 0),
+      preco_antigo_formatado: precoAntigo ? formatarBRL(precoAntigo) : null,
+      desconto,
+      nomeLoja: NOME_LOJA,
     });
-
-    console.log(data); // logs response data
-  } catch (error) {
-    console.log(error); //logs any error
-  }
-}
-sendSimpleMessage()
-} catch (err) {
-  res.status(500).send("Error while sending mail: " + err.message);
-}
-  return res.render("success");
-} else if (status === "pending") {
-  //enviar um email pro usuario com instruções para realizar o pagamento
-  return res.render("pending");
-} else {
-  //enviar um email para o usuario tentando recuperar a venda.
-  return res.render("fail");
-}
-}
-catch(err){
-console.log(`ocorreu um erro: ${err}`);
-return res.render("fail");
-}
-})
-
-app.get("/fail", (req, res)=>{
-res.render("fail")
-})
-
-app.get("/pending", (req, res)=>{
-res.render("pending")
-})
-
-
-app.post("/checkout",(req,res)=>{
-res.redirect("/")
-})
-
-app.get("/dash", async (req, res) => {
-    
-    if (!req.session.usuario) {
-    return res.redirect("/login");
-  }
-  
-    // Query correta usando DATE_FORMAT para evitar problemas de fuso horário no JS
-    const query = "SELECT DATE_FORMAT(data_pedido, '%Y-%m-%d') AS data, COUNT(*) AS total FROM pedidos WHERE status_pagamento = 'approved' AND data_pedido >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) GROUP BY DATE(data_pedido) ORDER BY data_pedido ASC;";
-    
-    const query2 = "SELECT * FROM pedidos WHERE status_pagamento = 'approved'";
-    const query3 = "SELECT * FROM pedidos WHERE status_pagamento = 'rejected'";
-    const query4 = "SELECT * FROM pedidos WHERE status_pagamento = 'pending'";
-    const queryUser = "SELECT * FROM usuarios WHERE user_id = 1";
-    
-    //colocar query de reembolsos aqui
-    const queryReembolsos = "SELECT * FROM reembolsos";
-    try {
-        // MUDANÇA AQUI: de 'db.query' para 'pool.promise().query'
-        const [rows] = await pool.promise().query(query); 
-        const [rows2] = await pool.promise().query(query2);
-        const [rows3] = await pool.promise().query(query3);
-        const [rows4] = await pool.promise().query(query4);
-        const [rows5] = await pool.promise().query(queryUser);
-        //colocar execução reembolsos da query aqui
-        const [rows6] = pool.promise().query(queryReembolsos);
-        
-        const pedidosLimpos = JSON.parse(JSON.stringify(rows2));
-        
-        // Enviamos o JSON direto para o Handlebars
-       // dados: rows5[0], admin: req.session.usuario.email_usuario
-       //enviar a resposta da query reembolsos no res.render abaixo
-        res.render("dashboard", { dados: JSON.stringify(rows), pedidos: pedidosLimpos, pedidos_falha: rows3, pedidos_pendentes: rows4, dadosUser: rows5[0], admin: req.session.usuario.email_u, reembolsos: rows6}); 
-      
-    } catch (err) {
-        console.error(err);
-        //res.status(500).send("Erro ao carregar o dashboard");
-    }
-});
-
-//envia codigo de rastreio
-app.post("/enviar-rastreio", async (req, res) => {
-    // Certifique-se que o nome do campo no formulário HTML é 'codigo' ou 'codigo_rastreio'
-    const { pedidoId, codigo } = req.body; 
-
-    try {
-        // 1. Busca os dados do cliente
-        const [rows] = await pool.promise().query(
-            "SELECT nome, email FROM pedidos WHERE id = ?", 
-            [pedidoId]
-        );
-
-        if (rows.length > 0) {
-            const cliente = rows[0];
-
-            // 2. Configura o envio do e-mail com HTML
-            async function sendSimpleMessage() {
-  const mailgun = new Mailgun(FormData);
-  const mg = mailgun.client({
-    username: "api",
-    key: process.env.API_KEY,
-    // When you have an EU-domain, you must specify the endpoint:
-    // url: "https://api.eu.mailgun.net"
-  });
-  try {
-    const data = await mg.messages.create("contato.kevinsrm.shop", {
-        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
-      from: "no-reply@contato.kevinsrm.shop",
-      to: cliente.email,
-      subject: `Boa notícia, ${cliente.nome.split(' ')[0]}! Seu pedido foi enviado 📦`,
-      text: "Boa notícia seu pedido foi enviado",
-      html:  `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-                    <div style="background-color: #2196F3; color: white; padding: 20px; text-align: center;">
-                        <h1 style="margin: 0;">Pedido Enviado!</h1>
-                    </div>
-                    <div style="padding: 20px; color: #333; line-height: 1.6;">
-                        <p>Olá, <strong>${cliente.nome}</strong>,</p>
-                        <p>Seu pedido acaba de ser despachado e já está a caminho! Você pode acompanhar a entrega usando o código de rastreio abaixo:</p>
-                        
-                        <div style="background-color: #f9f9f9; border: 1px dashed #2196F3; padding: 15px; text-align: center; margin: 20px 0; border-radius: 4px;">
-                            <span style="font-size: 1.2rem; letter-spacing: 2px; font-weight: bold; color: #2196F3;">
-                                ${codigo}
-                            </span>
-                        </div>
-
-                        <p style="text-align: center;">
-                            <a href="https://www.linkderastreio.com.br/?codigo=${codigo}" 
-                               style="background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
-                               Rastrear minha encomenda
-                            </a>
-                        </p>
-
-                        <p style="font-size: 0.9rem; color: #777; margin-top: 30px;">
-                            Se tiver qualquer dúvida, basta responder a este e-mail.<br>
-                            Atenciosamente, <strong>Equipe Sua Loja</strong>
-                        </p>
-                    </div>
-                </div>
-                `,
-    });
-
-    console.log(data); // logs response data
-    res.send("email enviado com sucesso")
-  } catch (error) {
-      res.send("falha ao enviar email")
-    console.log(error); //logs any error
-  }
-}
-sendSimpleMessage()
-
-            // 3. ATUALIZA O BANCO (Isso desabilita o botão no dashboard)
-            await pool.promise().query(
-                "UPDATE pedidos SET codigo_rastreio = ? WHERE id = ?", 
-                [codigo, pedidoId]
-            );
-
-            res.redirect("/dash?sucesso=true");
-        } else {
-            res.status(404).send("Pedido não encontrado.");
-        }
-    } catch (err) {
-        console.error("Erro ao enviar rastreio:", err);
-        res.status(500).send("Erro interno ao processar envio.");
-    }
-});
-
-app.post("/enviar-email-rv", async (req, res)=>{
-    const pedidoId = req.body.pedidoId;
-    try {
-        // 1. Busca os dados do cliente
-        const [rows] = await pool.promise().query(
-            "SELECT nome, email FROM pedidos WHERE id = ?", 
-            [pedidoId]
-        );
-        if (rows.length > 0) {
-            const cliente = rows[0];
-
-            // 2. Configura o envio do e-mail com HTML
-            async function sendSimpleMessage() {
-  const mailgun = new Mailgun(FormData);
-  const mg = mailgun.client({
-    username: "api",
-    key: process.env.API_KEY,
-    // When you have an EU-domain, you must specify the endpoint:
-    // url: "https://api.eu.mailgun.net"
-  });
-  try {
-    const data = await mg.messages.create("contato.kevinsrm.shop", {
-        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
-      from: "no-reply@contato.kevinsrm.shop",
-      to: cliente.email,
-      subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
-      text: "Falta pouco para seu pedido ser enviado",
-      html:  `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-    <!-- Header com cor de atenção/alerta (Amarelo ou Azul do MP) -->
-    <div style="background-color: #009EE3; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0; font-size: 1.5rem;">Pendente: Finalize sua compra</h1>
-    </div>
-
-    <div style="padding: 20px; color: #333; line-height: 1.6;">
-        <p>Olá, <strong>${cliente.nome}</strong>,</p>
-        
-        <p>Notamos que houve um problema no processamento do seu pagamento e o seu pedido ainda não foi finalizado. Não se preocupe, seus itens ainda estão reservados!</p>
-        
-        <p>Para concluir sua compra com total segurança através do <strong>Mercado Pago</strong>, verifique as dúvidas mais comuns abaixo. Você poderá escolher entre Pix, Cartão de Crédito, Saldo Mercado pago ou Boleto:</p>
-
-        
-
-        <div style="background-color: #f9f9f9; border-left: 4px solid #009EE3; padding: 15px; margin: 20px 0; border-radius: 4px;">
-            <p style="margin: 0; font-size: 0.9rem; color: #555;">
-                <strong>Por que meu pagamento falhou?</strong><br>
-                As causas mais comuns são dados de cartão incorretos, falta de limite ou instabilidade momentânea do banco. Tente novamente em alguns minutos ou escolha um novo método de pagamento.
-            </p>
-        </div>
-
-        <p style="font-size: 0.9rem; color: #777; margin-top: 30px;">
-            Se você já realizou o pagamento, por favor, desconsidere este e-mail. Se precisar de ajuda, basta responder a esta mensagem.<br><br>
-            Atenciosamente, <strong>Equipe De vendas</strong>
-        </p>
-    </div>
-</div>`,
-    });
-
-    console.log(data); // logs response data
-    res.send("email enviado com sucesso")
-  } catch (error) {
-      res.send("falha ao enviar email")
-    console.log(error); //logs any error
-  }
-}
-sendSimpleMessage()
-            //fim do if
-            // Exemplo genérico de query
-await pool.promise().query("UPDATE pedidos SET email_falha = true WHERE id = ?", [pedidoId]);
-
-            res.redirect("/dash?sucesso=true");
-        } else {
-            res.status(404).send("Pedido não encontrado.");
-        }
-            
-            }
-            catch(err){
-                res.status(500).send(`erro ao enviar email: ${err.message}`)
-            }
-})
-
-//enviar sobre realizar compra
-app.post("/enviar-email-rc", async (req, res)=>{
-    const pedidoId = req.body.pedidoId;
-    try {
-        // 1. Busca os dados do cliente
-        const [rows] = await pool.promise().query(
-            "SELECT nome, email FROM pedidos WHERE id = ?", 
-            [pedidoId]
-        );
-        if (rows.length > 0) {
-            const cliente = rows[0];
-
-            // 2. Configura o envio do e-mail com HTML
-            async function sendSimpleMessage() {
-  const mailgun = new Mailgun(FormData);
-  const mg = mailgun.client({
-    username: "api",
-    key: process.env.API_KEY,
-    // When you have an EU-domain, you must specify the endpoint:
-    // url: "https://api.eu.mailgun.net"
-  });
-  try {
-    const data = await mg.messages.create("contato.kevinsrm.shop", {
-        //"Mailgun Sandbox <postmaster@sandbox0727889cf90a422aa9e1eea9b464eec5.mailgun.org>"
-      from: "no-reply@contato.kevinsrm.shop",
-      to: cliente.email,
-      subject: `Falta pouco, ${cliente.nome.split(' ')[0]}! Para seu pedido ser enviado 📦`,
-      text: "Falta pouco para seu pedido ser enviado",
-      html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-    <!-- Header com cor de atenção/alerta (Amarelo ou Azul do MP) -->
-    <div style="background-color: #009EE3; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0; font-size: 1.5rem;">Pendente: Finalize sua compra</h1>
-    </div>
-
-    <div style="padding: 20px; color: #333; line-height: 1.6;">
-        <p>Olá, <strong>${cliente.nome}</strong>,</p>
-        
-        <p>Notamos que o seu pagamento e o seu pedido ainda não foi finalizado. Não se preocupe, seus itens ainda estão reservados!</p>
-        
-        <p>Para concluir sua compra com total segurança através do <strong>Mercado Pago</strong>, verifique as dúvidas mais comuns abaixo. Você poderá escolher entre Pix, Cartão de Crédito, Saldo Mercado pago ou Boleto:</p>
-
-        
-
-        <div style="background-color: #f9f9f9; border-left: 4px solid #009EE3; padding: 15px; margin: 20px 0; border-radius: 4px;">
-            <p style="margin: 0; font-size: 0.9rem; color: #555;">
-                <strong>Por que meu pagamento falhou?</strong><br>
-                As causas mais comuns são dados de cartão incorretos, falta de limite ou instabilidade momentânea do banco. Tente novamente em alguns minutos ou escolha um novo método de pagamento.
-            </p>
-        </div>
-
-        <p style="font-size: 0.9rem; color: #777; margin-top: 30px;">
-            Se você já realizou o pagamento, por favor, desconsidere este e-mail. Se precisar de ajuda, basta responder a esta mensagem.<br><br>
-            Atenciosamente, <strong>Equipe De vendas</strong>
-        </p>
-    </div>
-</div>`,
-    });
-
-    console.log(data); // logs response data
-    res.send("email enviado com sucesso")
-  } catch (error) {
-      res.send("falha ao enviar email")
-    console.log(error); //logs any error
-  }
-}
-sendSimpleMessage()
-            
-            //fim do if
-            // Exemplo genérico de query
-await pool.promise().query("UPDATE pedidos SET email_pendente = true WHERE id = ?", [pedidoId]);
-
-            res.redirect("/dash?sucesso=true");
-        } else {
-            res.status(404).send("Pedido não encontrado.");
-        }
-            
-            }
-            catch(err){
-                res.status(500).send(`erro ao enviar email: ${err.message}`)
-            }
-})
-
-//middleware para limpar os arquivos
-const limparUploads = (req, res, next) => {
-  const pastaUploads = path.join(process.cwd(), "public/uploads");
-
-  try {
-    if (fs.existsSync(pastaUploads)) {
-      const arquivos = fs.readdirSync(pastaUploads);
-
-      arquivos.forEach(file => {
-        const filePath = path.join(pastaUploads, file);
-        fs.unlinkSync(filePath);
-      });
-
-      console.log("uploads antigos removidos");
-    }
-
-    next();
   } catch (err) {
-    console.error("erro ao limpar uploads:", err);
-    next();
+    console.error("[/] erro ao carregar a home:", err.message);
+    next(err);
   }
-};
+});
 
+/* ------------------------------------------------------------------ */
+/* CHECKOUT TRANSPARENTE — PIX                                         */
+/* ------------------------------------------------------------------ */
 
+app.post("/pagamento/pix", async (req, res) => {
+  const { nome, email, cpf, telefone } = req.body || {};
+
+  if (!nome || !email || !cpf) {
+    return res.status(400).json({ ok: false, erro: "Preencha nome, e-mail e CPF." });
+  }
+  if (!emailValido(email)) {
+    return res.status(400).json({ ok: false, erro: "Informe um e-mail válido — é por ele que você recebe o download." });
+  }
+  if (apenasNumeros(cpf).length !== 11) {
+    return res.status(400).json({ ok: false, erro: "CPF inválido." });
+  }
+
+  try {
+    const home = await db.getHome();
+    const valor = parsePreco(home?.preco_com_desconto);
+    if (!valor) {
+      return res.status(500).json({ ok: false, erro: "Preço do produto não configurado no painel." });
+    }
+
+    const pedidoId = randomUUID();
+    await db.criarPedido({
+      id: pedidoId,
+      nome: String(nome).trim(),
+      email: String(email).trim().toLowerCase(),
+      cpf: String(cpf).trim(),
+      telefone: telefone ? String(telefone).trim() : null,
+      valor_total: valor,
+    });
+
+    const pagamento = await criarPagamentoPix({
+      pedidoId,
+      email: String(email).trim().toLowerCase(),
+      nome,
+      cpf,
+      telefone,
+      valor,
+      descricao: home?.nome || "Compra no site",
+    });
+
+    await db.atualizarPagamento({ pedidoId, paymentId: pagamento.paymentId, status: "pending" });
+
+    res.json({
+      ok: true,
+      pedido_id: pedidoId,
+      payment_id: pagamento.paymentId,
+      qr_code: pagamento.qrCode,
+      qr_code_base64: pagamento.qrCodeBase64,
+      valor: formatarBRL(pagamento.valor),
+      expira_em: pagamento.expiraEm,
+      modo_demo: MP_MOCK,
+    });
+  } catch (err) {
+    console.error("[/pagamento/pix] erro:", err.message);
+    const desenvolvimento = process.env.NODE_ENV !== "production";
+    res.status(502).json({
+      ok: false,
+      erro: desenvolvimento && err.message
+        ? err.message
+        : "Não foi possível gerar o QR Code agora. Tente novamente em instantes.",
+    });
+  }
+});
+
+/** Polling usado pela página de checkout para saber se o PIX foi pago. */
+app.get("/pagamento/status/:pedidoId", async (req, res) => {
+  try {
+    const resultado = await sincronizarPedido(req.params.pedidoId);
+    if (resultado.erro && !resultado.status) return res.status(404).json({ ok: false, erro: resultado.erro });
+    res.json({
+      ok: true,
+      status: resultado.status,
+      aprovado: resultado.aprovado,
+      email_enviado: resultado.emailEnviado,
+    });
+  } catch (err) {
+    console.error("[/pagamento/status] erro:", err.message);
+    res.status(500).json({ ok: false, erro: "erro ao verificar o pagamento" });
+  }
+});
+
+/**
+ * Webhook do Mercado Pago.
+ * Configure em: https://www.mercadopago.com.br/developers/panel/applications
+ * -> Webhooks -> Pagamentos -> https://SEU-DOMINIO/webhook
+ */
+async function tratarWebhook(req, res) {
+  const origem = { ...req.query, ...(req.body || {}) };
+  const tipo = origem.type || origem.topic;
+  const paymentId = origem["data.id"] || origem.data?.id || origem.id;
+
+  if (tipo && tipo !== "payment") return res.status(200).json({ ok: true, ignorado: tipo });
+  if (!paymentId) return res.status(200).json({ ok: true, ignorado: "sem id de pagamento" });
+
+  try {
+    const pagamento = await consultarPagamento(paymentId);
+    const externalReference = pagamento?.external_reference || "";
+    if (!externalReference.includes("#")) {
+      return res.status(200).json({ ok: true, ignorado: "external_reference inválido" });
+    }
+    const [pedidoId] = externalReference.split("#");
+    const resultado = await sincronizarPedido(pedidoId);
+    console.log(`[webhook] pagamento ${paymentId} -> status ${resultado.status}`);
+    return res.status(200).json({ ok: true, status: resultado.status });
+  } catch (err) {
+    console.error("[webhook] erro:", err.message);
+    // Responde 200 mesmo assim para o Mercado Pago não ficar reenviando.
+    return res.status(200).json({ ok: false, erro: err.message });
+  }
+}
+
+app.post("/webhook", tratarWebhook);
+app.get("/webhook", tratarWebhook);
+
+/* Páginas de retorno (mantidas para links antigos / e-mails). */
+app.get("/success", (req, res) => res.render("success", { titulo: "Pagamento aprovado", nomeLoja: NOME_LOJA }));
+app.get("/fail", (req, res) => res.render("fail", { titulo: "Pagamento não aprovado", nomeLoja: NOME_LOJA }));
+app.get("/pending", (req, res) => res.render("pending", { titulo: "Pagamento pendente", nomeLoja: NOME_LOJA }));
+
+/* ------------------------------------------------------------------ */
+/* PAINEL ADMINISTRATIVO                                               */
+/* ------------------------------------------------------------------ */
+
+app.get("/dash", requireAdmin, async (req, res, next) => {
+  try {
+    const [
+      vendas,
+      aprovados,
+      pendentes,
+      recusados,
+      totais,
+      admin,
+      reembolsos,
+      home,
+      imagens,
+      linkDownload,
+    ] = await Promise.all([
+      db.getVendasUltimos7Dias(),
+      db.getPedidosPorStatus("approved"),
+      db.getPedidosPorStatus("pending"),
+      db.getPedidosPorStatus("rejected"),
+      db.getTotaisPorStatus(),
+      db.getAdmin(),
+      db.listarReembolsos(),
+      db.getHome(),
+      db.getImagens(),
+      getLinkDownload(),
+    ]);
+
+    res.render("dashboard", {
+      titulo: "Painel administrativo",
+      admin: req.session.usuario?.email_u || admin?.email || "",
+      nomeLoja: NOME_LOJA,
+      dados: JSON.stringify(vendas),
+      totais,
+      pedidos: aprovados.map(viewModelPedido),
+      pedidos_pendentes: pendentes.map(viewModelPedido),
+      pedidos_falha: recusados.map(viewModelPedido),
+      reembolsos: JSON.parse(JSON.stringify(reembolsos || [])),
+      produto: home || {},
+      imagemAtual: imagens || {},
+      link_download: linkDownload || "",
+      aviso: req.query.aviso || null,
+      alerta: req.query.alerta || null,
+    });
+  } catch (err) {
+    console.error("[/dash] erro:", err);
+    next(err);
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* AUTENTICAÇÃO                                                        */
+/* ------------------------------------------------------------------ */
+
+app.get("/login", (req, res) => {
+  if (req.session.usuario) return res.redirect("/dash");
+  res.render("login", { titulo: "Entrar", nomeLoja: NOME_LOJA, erro: req.query.erro || null });
+});
+
+app.post("/loginuser", async (req, res) => {
+  try {
+    const { email: emailLogin, senha, doisfa } = req.body || {};
+    if (!emailLogin || !senha) {
+      return res.redirect("/login?erro=Preencha%20e-mail%20e%20senha.");
+    }
+    const admin = await db.getAdmin();
+    if (!admin) return res.redirect("/login?erro=Admin%20não%20configurado%20no%20banco.");
+
+    const credenciaisOk =
+      admin.email === String(emailLogin).trim() &&
+      admin.senha === senha &&
+      String(admin.two_factor_secret || "") === String(doisfa || "");
+
+    if (!credenciaisOk) {
+      return res.redirect("/login?erro=Credenciais%20inválidas.");
+    }
+
+    req.session.usuario = { email_u: admin.email, logado: true };
+    req.session.save((err) => {
+      if (err) {
+        console.error("erro ao salvar sessão:", err);
+        return res.redirect("/login?erro=Erro%20ao%20iniciar%20sessão.");
+      }
+      return res.redirect("/dash");
+    });
+  } catch (err) {
+    console.error("[/loginuser] erro:", err.message);
+    res.status(500).send("Erro interno ao autenticar.");
+  }
+});
+
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid");
+    res.redirect("/");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* PAINEL — ações                                                      */
+/* ------------------------------------------------------------------ */
+
+/** Salva o link de download enviado no e-mail de pagamento aprovado. */
+app.post("/painel/link-download", requireAdmin, async (req, res) => {
+  const link = String(req.body?.link_download || "").trim();
+  if (!link) return res.redirect("/dash?alerta=Informe%20um%20link%20de%20download.");
+  if (!/^https?:\/\/.+/i.test(link)) {
+    return res.redirect("/dash?alerta=O%20link%20precisa%20começar%20com%20http%20ou%20https.");
+  }
+  try {
+    await db.atualizarLinkDownload(link);
+    res.redirect("/dash?aviso=Link%20de%20download%20salvo%20com%20sucesso.");
+  } catch (err) {
+    console.error("[/painel/link-download] erro:", err.message);
+    res.redirect("/dash?alerta=Não%20foi%20possível%20salvar%20o%20link.");
+  }
+});
+
+/** Reenvia o e-mail com o link de download para um pedido aprovado. */
+app.post("/painel/reenviar-download", requireAdmin, async (req, res) => {
+  try {
+    const resultado = await reenviarEmailDownload(req.body?.pedidoId);
+    if (resultado.ok) return res.redirect("/dash?aviso=E-mail%20de%20download%20reenviado.");
+    if (resultado.pulado) {
+      return res.redirect("/dash?alerta=API_KEY%20do%20Mailgun%20não%20configurada%20—%20e-mail%20não%20enviado.");
+    }
+    return res.redirect(`/dash?alerta=${encodeURIComponent(resultado.erro || "Falha ao enviar o e-mail.")}`);
+  } catch (err) {
+    return res.redirect(`/dash?alerta=${encodeURIComponent(err.message)}`);
+  }
+});
+
+/** Atualiza produto (preços, descrição, link de download e imagens). */
 app.post(
   "/validateupload",
-  limparUploads,
-  upload.array('imagens', 4),
+  requireAdmin,
+  upload.array("imagens", 4),
   async (req, res) => {
-    const { preco_sem_desconto, preco, descricao, id } = req.body;
-    
+    const { preco_sem_desconto, preco, descricao, link_download, id = 1 } = req.body || {};
     try {
-      // 1. Validação inicial de arquivos
-      if (!req.files || req.files.length !== 4) {
-        // O "return" é vital para parar a execução aqui!
-        return res.status(400).send("Envie exatamente 4 imagens.");
+      await db.atualizarHome({
+        precoSemDesconto: preco_sem_desconto ?? null,
+        preco: preco ?? null,
+        descricao: descricao ?? null,
+        linkDownload: link_download !== undefined ? link_download : (await db.getHome())?.link_download ?? null,
+        id,
+      });
+
+      if (req.files && req.files.length === 4) {
+        await db.atualizarImagens(req.files.map((file) => file.filename), id);
       }
 
-      // 2. Atualiza a tabela 'home'
-      const sqlHome = "UPDATE home SET preco_sem_desconto = ?, preco_com_desconto = ?, descricao = ? WHERE id = ?";
-      await pool.promise().query(sqlHome, [preco_sem_desconto, preco, descricao, id]);
-
-      // 3. Atualiza as imagens
-      const caminhos = req.files.map(file => file.filename);
-      
-      // Garante que o registro existe
-      await pool.promise().query("INSERT IGNORE INTO imagens (id) VALUES (?)", [id]);
-
-      const sqlImagens = `
-        UPDATE imagens 
-        SET caminho1 = ?, caminho2 = ?, caminho3 = ?, caminho4 = ? 
-        WHERE id = ?
-      `;
-      await pool.promise().query(sqlImagens, [...caminhos, id]);
-
-      // 4. Busca dados para renderizar a página final (se necessário)
-      const dados_sql = "SELECT preco_sem_desconto, preco_com_desconto, descricao FROM home WHERE id = 1";
-      let [resultadoHome] = await pool.promise().query(dados_sql);
-
-      // 5. ENVIA A RESPOSTA ÚNICA (Sucesso)
-      // Escolha apenas UM render ou redirect aqui
-      console.log("dados do banco " + resultadoHome[0])
-      res.render("dashboard", { 
-          //status
-        status: 'sucesso', 
-        updated: "true",
-        resultado_home: resultadoHome[0]});
-
-    } catch (error) {
-        res.render("dashboard", { 
-          //status
-        status: 'falha', 
-        updated: "false", 
-        resultado_home: resultadoHome[0]});
-      console.error("Erro no processo:", error);
-      // ENVIA A RESPOSTA ÚNICA (Erro)
-      if (!res.headersSent) {
-        res.redirect(`/dash?updated=false&error=${encodeURIComponent(error.message)}`);
-      }
+      res.redirect("/dash?aviso=Produto%20atualizado%20com%20sucesso.");
+    } catch (err) {
+      console.error("[/validateupload] erro:", err.message);
+      res.redirect(`/dash?alerta=${encodeURIComponent(err.message)}`);
     }
   }
 );
 
-app.get("/login", (req,res)=>{
-  /*
-  if(req.session.isLoged){
-    res.redirect("/");
-  }
-  
-  
-  */
-  res.render("login");
-})
+/** Envia código de rastreio (pedidos com entrega física). */
+app.post("/enviar-rastreio", requireAdmin, async (req, res) => {
+  const { pedidoId, codigo } = req.body || {};
+  try {
+    const pedido = await db.getPedidoById(pedidoId);
+    if (!pedido) return res.status(404).send("Pedido não encontrado.");
 
-app.post("/loginuser", async (req, res) =>{
-  try{
-    console.log("Dados recebidos:", req.body);
+    const resultado = await enviarEmailRastreio({ para: pedido.email, nome: pedido.nome, codigo });
+    if (resultado.ok) await db.atualizarRastreio(pedidoId, codigo);
 
-    if (!req.body || !req.body.email) {
-      return res.status(400).send("Dados do formulário não recebidos corretamente.");
-    }
-  const {email, senha, doisfa} = req.body;
-  
-  let sql = await "SELECT email, senha, two_factor_secret FROM usuarios WHERE user_id = 1";
-  
-  let [result] = await pool.promise().query(sql);
-  if(result[0].email == email && result[0].senha == senha && result[0].two_factor_secret == doisfa){
-      
-      req.session.usuario = { email_u: result[0].email, logado: true };
-      req.session.save((err) => {
-  if (err) {
-    console.error("Erro ao salvar sessão:", err);
-    return res.render("login", { mensagem: "error_server" });
+    res.redirect(
+      resultado.ok
+        ? "/dash?aviso=Código%20de%20rastreio%20enviado."
+        : "/dash?alerta=Não%20foi%20possível%20enviar%20o%20e-mail%20de%20rastreio."
+    );
+  } catch (err) {
+    console.error("[/enviar-rastreio] erro:", err.message);
+    res.status(500).send("Erro interno ao enviar o rastreio.");
   }
-  return res.redirect("/dash");
 });
-}
-    //aqui devia levar pra rota dash que leva pro dashboard.handlear mas nao rolou
-  /*
-  if(req.session.usuario.logado){
-  return res.redirect("/dash");
-  }
-      //criar cookie de sessao aqui
-//return res.render("dashboard", { dados: result[0]});
-  }
-  else{
-return res.render("login", {mensagem: "error_loging"})
-  }
-  */
-  }
-  catch(err){
-    res.status(500).send(`erro : ${err.message}`)
-  }
-})
 
-app.get('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.send('Erro ao sair');
+/** E-mail de recuperação de venda (pagamento recusado). */
+app.post("/enviar-email-rv", requireAdmin, async (req, res) => {
+  try {
+    const pedido = await db.getPedidoById(req.body?.pedidoId);
+    if (!pedido) return res.status(404).send("Pedido não encontrado.");
+    const resultado = await enviarEmailRecusado({ para: pedido.email, nome: pedido.nome, pedidoId: pedido.id });
+    if (resultado.ok) await db.marcarEmailFalha(pedido.id);
+    res.redirect(resultado.ok ? "/dash?aviso=E-mail%20de%20recuperação%20enviado." : "/dash?alerta=Falha%20ao%20enviar%20o%20e-mail.");
+  } catch (err) {
+    console.error("[/enviar-email-rv] erro:", err.message);
+    res.status(500).send("Erro interno ao enviar o e-mail.");
+  }
+});
+
+/** E-mail de cobrança (pagamento pendente). */
+app.post("/enviar-email-rc", requireAdmin, async (req, res) => {
+  try {
+    const pedido = await db.getPedidoById(req.body?.pedidoId);
+    if (!pedido) return res.status(404).send("Pedido não encontrado.");
+    const resultado = await enviarEmailPendente({
+      para: pedido.email,
+      nome: pedido.nome,
+      pedidoId: pedido.id,
+      valor: pedido.valor_total,
+    });
+    if (resultado.ok) await db.marcarEmailPendente(pedido.id);
+    res.redirect(resultado.ok ? "/dash?aviso=E-mail%20enviado." : "/dash?alerta=Falha%20ao%20enviar%20o%20e-mail.");
+  } catch (err) {
+    console.error("[/enviar-email-rc] erro:", err.message);
+    res.status(500).send("Erro interno ao enviar o e-mail.");
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* SUPORTE / REEMBOLSOS                                                */
+/* ------------------------------------------------------------------ */
+
+app.get("/suporte", (req, res) => res.status(200).render("suport", { titulo: "Central de suporte", nomeLoja: NOME_LOJA }));
+app.get("/suporte/reembolso", (req, res) =>
+  res.status(200).render("reembolso", { titulo: "Solicitar reembolso", nomeLoja: NOME_LOJA })
+);
+
+app.post("/reembolsauser", async (req, res) => {
+  try {
+    const { email, payment_id, motivo } = req.body || {};
+    if (!email || !payment_id || !motivo) {
+      return res.status(400).json({ erro: "Todos os campos são obrigatórios." });
     }
-    res.clearCookie('connect.sid'); // Limpa o cookie da sessão
-    res.redirect('/');
+    const resultado = await db.criarReembolso({ email, payment_id, motivo });
+    return res.status(201).json({ message: "Solicitação de reembolso enviada.", id: resultado.insertId ?? resultado.id });
+  } catch (err) {
+    console.error("[/reembolsauser] erro:", err.message);
+    return res.status(500).json({ erro: "Erro interno do servidor." });
+  }
+});
+
+/** Estorna o pagamento no Mercado Pago (ação do admin no painel). */
+app.post("/refund", requireAdmin, async (req, res) => {
+  const { id: reembolsoId, payment_id: paymentId } = req.body || {};
+  try {
+    const reembolso = new PaymentRefund(client);
+    await reembolso.create({ payment_id: paymentId });
+    if (reembolsoId) await db.atualizarStatusReembolso(reembolsoId, "aprovado");
+    res.redirect("/dash?aviso=Reembolso%20processado%20no%20Mercado%20Pago.");
+  } catch (err) {
+    console.error("[/refund] erro:", err.message);
+    if (reembolsoId) {
+      try {
+        await db.atualizarStatusReembolso(reembolsoId, "recusado");
+      } catch {}
+    }
+    res.redirect(`/dash?alerta=${encodeURIComponent(`Falha no reembolso: ${err.message}`)}`);
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* IA (suporte)                                                        */
+/* ------------------------------------------------------------------ */
+
+let genaiClient = null;
+
+app.get("/bot", async (req, res) => {
+  const pergunta = req.query.pergunta || "Explique em poucas palavras como a IA funciona";
+  try {
+    if (!process.env.GOOGLE_API_KEY) {
+      return res.status(503).send("GOOGLE_API_KEY não configurada.");
+    }
+    if (!genaiClient) {
+      const { GoogleGenAI } = await import("@google/genai");
+      genaiClient = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    }
+    const result = await genaiClient.models.generateContent({
+      model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      systemInstruction:
+        "Você é um assistente especializado em tecnologia. Responda de forma curta, clara e técnica.",
+      contents: [{ role: "user", parts: [{ text: pergunta }] }],
+    });
+    const texto = result.candidates?.[0]?.content?.parts?.[0]?.text || "Sem resposta.";
+    res.send(texto);
+  } catch (err) {
+    console.error("[/bot] erro:", err.message);
+    res.status(500).send(`Erro ao processar a IA: ${err.message}`);
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* 404 / erros                                                         */
+/* ------------------------------------------------------------------ */
+
+app.use((req, res) => res.status(404).render("notfound", { titulo: "Página não encontrada", nomeLoja: NOME_LOJA }));
+
+app.use((err, req, res, next) => {
+  console.error("[erro]", err.message);
+  if (res.headersSent) return next(err);
+  res.status(500).render("notfound", {
+    titulo: "Erro interno",
+    nomeLoja: NOME_LOJA,
+    codigo: 500,
+    mensagem:
+      "Não foi possível carregar esta página. Verifique a conexão com o banco de dados e as credenciais do arquivo .env.",
   });
 });
 
+/* ------------------------------------------------------------------ */
+/* Boot                                                                */
+/* ------------------------------------------------------------------ */
 
+async function iniciar() {
+  await db.testarConexao();
+  await db.ensureSchema();
+  app.listen(port, () => {
+    console.log(`servidor rodando na porta: ${port}`);
+    if (db.DB_MOCK) console.log("[demo] DB_MOCK=true — usando banco em memória.");
+    if (MP_MOCK) console.log("[demo] MP_MOCK=true — Mercado Pago simulado (não use em produção).");
+  });
+}
 
+iniciar();
 
-app.get("/suporte", (req, res)=>{
-    res.status(200).render("suport")
-})
-
-app.get("/bot", async (req, res) => {
-    // Pega a pergunta enviada pelo usuário na URL (ex: /bot?pergunta=O que é node?)
-    const perguntaUsuario = req.query.pergunta || "Explique em poucas palavras como a IA funciona";
-
-    try {
-        const result = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            // Aqui você define as "regras" antes do conteúdo do usuário
-            systemInstruction: "Você é um assistente especializado em tecnologia. Responda de forma curta, clara e técnica.",
-            contents: [
-                { 
-                    role: "user", 
-                    parts: [{ text: perguntaUsuario }] 
-                }
-            ],
-        });
-
-        const texto = result.candidates[0].content.parts[0].text;
-        
-        res.send(texto);
-        console.log("Resposta enviada:", texto);
-    } catch (error) {
-        console.error("Erro no Gemini:", error);
-        res.status(500).send("Erro ao processar IA: " + error.message);
-    }
-});
-
-app.get("/suporte/reembolso", (req, res)=>{
-    res.status(200).render("reembolso")
-})
-// 1 - criar rota pra receber os dados do formulario de reembolso
-// 2 - inserir os dados no banco e exibilos no dashboard
-// 3 - botão de enviar reembolso no dashboard chama /refund
-app.post("/reembolsauser", async (req,res)=>{
-    try{
-    const {email, payment_id, motivo} = req.body;
-    if(!email && !payment_id && !motivo){
-        return res.status(400).send("todos os campos são obrigatorios");
-    }
-    const sql = "INSERT INTO reembolsos (email, payment_id, motivo, status) VALUES (?, ?, ?, ?)";
-    const [result] = await pool.promise().query(sql, [email, payment_id, motivo, "pendente"])
-    return res.status(201).json({
-        message: "solicitação de reembolso enviada",
-        id: result.insertId
-    })
-    console.log(`solicitação de reembolso recebida, id: ${result.insertId}, email: ${email}, motivo: ${motivo}`);
-   }
-    catch(err){
-            console.log(`erro ao processar solicitação. ERRO: ${err.message}`)
-            return res.status(500).json({
-                erro: "erro interno do servidor"
-            })
-        
-    }
-})
-
-
-//essa rota refund vai ser chamada pelo dashboard
-app.post("/refund", (req, res)=>{
-    //import MercadoPago, { Payment } from 'mercadopago';
-const {email, payment_id, motivo} = req.body;
-//const client = new MercadoPago({ accessToken: process.env.ACCESS_TOKEN });
-
-  const payment = new Payment(client);
-  payment.cancel({
-      id: payment_id
- }).then(console.log).catch(console.log);
- 
-})
-
-
-app.use((req, res, next)=>{
-    res.status(404).render("notfound")
-})
-
-app.listen(port, ()=>{
-    console.log("servidor rodando na porta: " + port)
-})
-
-
-
+export default app;

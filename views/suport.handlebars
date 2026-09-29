@@ -1,137 +1,77 @@
-<div class="section white">
-  <div class="container">
-    
-    <h3 class="center orange-text text-darken-2">
-      Central de Suporte
-    </h3>
+{{!-- ======================= NAV ======================= --}}
+<header class="sticky top-0 z-40 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+    <a href="/" class="flex items-center gap-2.5">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">{{icone "bolt" class="w-5 h-5"}}</span>
+      <span class="font-display text-lg font-bold tracking-tight text-white">{{nomeLoja}}</span>
+    </a>
+    <a href="/" class="btn-ghost px-4 py-2 text-sm">{{icone "arrow-left" class="w-4 h-4"}} Voltar</a>
+  </div>
+</header>
 
-    <p class="center grey-text text-darken-1">
-      Atendimento, acesso ao produto e informações sobre reembolso.
-    </p>
+<div class="relative mx-auto max-w-4xl px-4 py-14 sm:px-6">
+  <div class="pointer-events-none absolute -top-20 left-1/2 h-[320px] w-[560px] -translate-x-1/2 rounded-full bg-brand-600/20 blur-[110px]"></div>
 
-    <br>
+  <div class="relative text-center">
+    <span class="eyebrow">{{icone "users" class="w-3.5 h-3.5"}} Central de suporte</span>
+    <h1 class="section-title mt-4">Como podemos ajudar?</h1>
+    <p class="mt-3 text-slate-400">Acesso ao produto, pagamentos e reembolsos em um só lugar.</p>
+  </div>
 
-    <div class="card z-depth-1">
-      <div class="card-content">
+  <div class="relative mt-10 grid gap-5 md:grid-cols-2">
+    <article class="card p-6">
+      <span class="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/15 text-brand-300">{{icone "mail" class="w-5 h-5"}}</span>
+      <h2 class="mt-4 font-display text-lg font-semibold text-white">Atendimento</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-400">
+        Nosso suporte funciona pelo e-mail de atendimento. Responda o e-mail que você recebeu na compra para falar
+        direto com a nossa equipe, recuperar o acesso ou abrir um chamado.
+      </p>
+    </article>
 
-        <span class="card-title orange-text text-darken-2">
-          Atendimento
-        </span>
+    <article class="card p-6">
+      <span class="grid h-11 w-11 place-items-center rounded-xl bg-pix-500/15 text-pix-300">{{icone "download" class="w-5 h-5"}}</span>
+      <h2 class="mt-4 font-display text-lg font-semibold text-white">Entrega do produto</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-400">
+        Após a confirmação do Pix, o acesso é liberado automaticamente: enviamos um e-mail com o botão de download.
+        A confirmação do Pix costuma levar poucos segundos.
+      </p>
+    </article>
 
-        <p class="grey-text text-darken-2">
-          Nosso suporte funciona através do nosso email de atendimento
-          onde você poderá solicitar ajuda, recuperar acesso e abrir pedidos
-          relacionados ao seu pagamento.
-        </p>
-
-        <br>
-
-        <div class="center">
-          
-        </div>
-
-      </div>
-    </div>
-
-    <div class="card z-depth-1">
-      <div class="card-content">
-
-        <span class="card-title orange-text text-darken-2">
-          Entrega do Produto
-        </span>
-
-        <p class="grey-text text-darken-2">
-          Após a confirmação do pagamento pelo Mercado Pago,
-          o acesso ao produto digital é liberado automaticamente.
-        </p>
-
-        <br>
-
-        <p class="grey-text text-darken-2">
-          Em pagamentos via PIX ou saldo Mercado Pago,
-          a liberação normalmente ocorre em poucos minutos.
-        </p>
-
-        <br>
-
-        <p class="grey-text text-darken-2">
-          Em pagamentos via cartão, o prazo de aprovação
-          pode variar conforme a análise realizada
-          pelo próprio Mercado Pago.
-        </p>
-
-      </div>
-    </div>
-
-    <div class="card z-depth-1">
-      <div class="card-content">
-
-        <span class="card-title orange-text text-darken-2">
-          Política de Reembolso
-        </span>
-
-        <p class="grey-text text-darken-2">
-          Trabalhamos em conformidade com o Código de Defesa do Consumidor
-          para compras realizadas pela internet.
-        </p>
-
-        <br>
-
-        <blockquote>
-          Solicitações de reembolso podem ser realizadas em até
-          7 dias corridos após a confirmação da compra.
-        </blockquote>
-
-        <br>
-
-        <p class="grey-text text-darken-2">
-          Para abrir uma solicitação de reembolso,
-          acesse nossa central de suporte e informe:
-        </p>
-
-        <ul class="browser-default">
-          <li>Email utilizado na compra</li>
-          <li>ID ou comprovante do pagamento</li>
-          <li>Motivo da solicitação</li>
+    <article class="card p-6">
+      <span class="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/15 text-brand-300">{{icone "shield" class="w-5 h-5"}}</span>
+      <h2 class="mt-4 font-display text-lg font-semibold text-white">Política de reembolso</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-400">
+        Trabalhamos conforme o Código de Defesa do Consumidor: você pode solicitar o reembolso em até 7 dias corridos
+        após a compra. O estorno é processado pelo Mercado Pago, no mesmo método de pagamento.
+      </p>
+      <div class="mt-5 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Para abrir a solicitação, informe</p>
+        <ul class="mt-2 space-y-1.5 text-sm text-slate-300">
+          <li class="flex items-center gap-2">{{icone "check" class="w-4 h-4 text-pix-400"}} E-mail usado na compra</li>
+          <li class="flex items-center gap-2">{{icone "check" class="w-4 h-4 text-pix-400"}} ID ou comprovante do pagamento</li>
+          <li class="flex items-center gap-2">{{icone "check" class="w-4 h-4 text-pix-400"}} Motivo da solicitação</li>
         </ul>
-
-        <br>
-
-        <p class="grey-text text-darken-2">
-          Após a análise, o reembolso será processado diretamente
-          pelo Mercado Pago utilizando o mesmo método
-          de pagamento da compra.
-        </p>
-
-        <br>
-
-        <div class="center">
-          <a href="/suporte/reembolso"
-             class="btn orange darken-2 waves-effect waves-light">
-            SOLICITAR REEMBOLSO
-          </a>
-        </div>
-
       </div>
-    </div>
+      <a href="/suporte/reembolso" class="btn-primary mt-5 w-full">
+        {{icone "refund" class="w-4 h-4"}} Solicitar reembolso
+      </a>
+    </article>
 
-    <div class="card z-depth-1">
-      <div class="card-content">
-
-        <span class="card-title orange-text text-darken-2">
-          Problemas de Acesso
-        </span>
-
-        <p class="grey-text text-darken-2">
-          Caso não receba o acesso após a aprovação do pagamento,
-          utilize nossa central de suporte para validar sua compra
-          e recuperar o acesso ao produto.
-        </p>
-
-      </div>
-    </div>
-
-    <br><br>
-
+    <article class="card p-6">
+      <span class="grid h-11 w-11 place-items-center rounded-xl bg-amber-500/15 text-amber-300">{{icone "alert" class="w-5 h-5"}}</span>
+      <h2 class="mt-4 font-display text-lg font-semibold text-white">Problemas de acesso</h2>
+      <p class="mt-2 text-sm leading-relaxed text-slate-400">
+        Pagou e não recebeu o e-mail? Confira a caixa de spam e aguarde alguns minutos. Se ainda assim não chegar,
+        envie o comprovante do Pix para o nosso atendimento que reenviamos o link de download.
+      </p>
+      <p class="mt-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-slate-400">
+        {{icone "lock" class="w-3.5 h-3.5 shrink-0 text-pix-400"}}
+        Pagamentos processados com segurança pelo Mercado Pago.
+      </p>
+    </article>
   </div>
 </div>
+
+<footer class="border-t border-white/5 py-8 text-center text-xs text-slate-600">
+  © {{nomeLoja}} · Todos os direitos reservados
+</footer>

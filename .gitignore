@@ -1,1 +1,7 @@
 .env
+
+# Dependências: já há pacotes versionados neste repositório (histórico),
+# mas as novas não serão commitadas — rode `npm install` para obtê-las.
+# O CSS do Tailwind já vai compilado em public/css/app.css, então o
+# servidor sobe sem precisar do build.
+node_modules/

@@ -1,0 +1,133 @@
+{{!--
+  Partial: tabela de pedidos
+  Uso: {{> tabela-pedidos lista=pedidos tipo="aprovado" vazio="Nenhuma venda aprovada ainda."}}
+--}}
+<div class="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60">
+  {{#if lista.length}}
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[720px] text-left text-sm">
+        <thead class="border-b border-white/10 bg-white/[0.03] text-[11px] uppercase tracking-wider text-slate-400">
+          <tr>
+            <th class="px-5 py-3.5 font-semibold">Cliente</th>
+            <th class="px-5 py-3.5 font-semibold">Pedido</th>
+            <th class="px-5 py-3.5 font-semibold">Valor</th>
+            <th class="px-5 py-3.5 font-semibold">Status</th>
+            <th class="px-5 py-3.5 text-right font-semibold">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          {{#each lista}}
+            <tr class="pedido-linha transition hover:bg-white/[0.03]">
+              <td class="px-5 py-4">
+                <div class="flex items-center gap-3">
+                  <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-500/15 text-xs font-bold text-brand-300">
+                    {{iniciais this.nome}}
+                  </span>
+                  <div class="min-w-0">
+                    <p class="truncate font-semibold text-white">{{this.nome}}</p>
+                    <p class="truncate text-xs text-slate-500">{{this.email}}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-5 py-4">
+                <p class="font-mono text-xs text-slate-300">{{resumo this.id 8}}</p>
+                <p class="text-xs text-slate-500">{{this.data_formatada}}</p>
+              </td>
+              <td class="px-5 py-4 font-semibold text-white">{{this.valor_formatado}}</td>
+              <td class="px-5 py-4">
+                {{#if (eq this.status_pagamento "approved")}}<span class="badge-success">Aprovado</span>{{/if}}
+                {{#if (eq this.status_pagamento "pending")}}<span class="badge-warning">Pendente</span>{{/if}}
+                {{#if (eq this.status_pagamento "rejected")}}<span class="badge-danger">Recusado</span>{{/if}}
+              </td>
+              <td class="px-5 py-4">
+                <div class="flex items-center justify-end gap-2">
+                  <button type="button" data-alvo="detalhe-{{this.id}}"
+                          class="detalhes-toggle grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-400 transition hover:border-white/25 hover:text-white">
+                    {{icone "eye" class="w-4 h-4"}}
+                  </button>
+                  {{#if (eq ../tipo "aprovado")}}
+                    <form method="POST" action="/painel/reenviar-download">
+                      <input type="hidden" name="pedidoId" value="{{this.id}}">
+                      <button type="submit"
+                              class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-500">
+                        {{icone "mail" class="w-3.5 h-3.5"}}
+                        {{#if this.email_enviado}}Reenviar{{else}}Enviar download{{/if}}
+                      </button>
+                    </form>
+                  {{/if}}
+                  {{#if (eq ../tipo "pendente")}}
+                    <form method="POST" action="/enviar-email-rc">
+                      <input type="hidden" name="pedidoId" value="{{this.id}}">
+                      <button type="submit" {{#if this.email_pendente}}disabled{{/if}}
+                              class="inline-flex items-center gap-1.5 rounded-lg {{#if this.email_pendente}}cursor-not-allowed bg-white/5 text-slate-500{{else}}bg-amber-500 text-slate-950 hover:bg-amber-400{{/if}} px-3 py-2 text-xs font-semibold transition">
+                        {{icone "send" class="w-3.5 h-3.5"}}
+                        {{#if this.email_pendente}}Cobrado{{else}}Cobrar{{/if}}
+                      </button>
+                    </form>
+                  {{/if}}
+                  {{#if (eq ../tipo "rejeitado")}}
+                    <form method="POST" action="/enviar-email-rv">
+                      <input type="hidden" name="pedidoId" value="{{this.id}}">
+                      <button type="submit" {{#if this.email_falha}}disabled{{/if}}
+                              class="inline-flex items-center gap-1.5 rounded-lg {{#if this.email_falha}}cursor-not-allowed bg-white/5 text-slate-500{{else}}bg-rose-500 text-white hover:bg-rose-400{{/if}} px-3 py-2 text-xs font-semibold transition">
+                        {{icone "send" class="w-3.5 h-3.5"}}
+                        {{#if this.email_falha}}Enviado{{else}}Recuperar{{/if}}
+                      </button>
+                    </form>
+                  {{/if}}
+                </div>
+              </td>
+            </tr>
+
+            {{!-- Linha de detalhes --}}
+            <tr id="detalhe-{{this.id}}" class="detalhe hidden bg-slate-950/50">
+              <td colspan="5" class="px-5 py-5">
+                <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <p class="label-light text-slate-500">Contato</p>
+                    <p class="text-sm text-slate-200">{{this.telefone}}</p>
+                    <p class="text-sm text-slate-200">CPF {{this.cpf}}</p>
+                  </div>
+                  <div>
+                    <p class="label-light text-slate-500">Pagamento</p>
+                    <p class="font-mono text-sm text-slate-200">{{#if this.payment_id}}{{this.payment_id}}{{else}}—{{/if}}</p>
+                    <p class="text-xs text-slate-500">Pix · {{this.status_pagamento}}</p>
+                  </div>
+                  <div>
+                    <p class="label-light text-slate-500">Entrega digital</p>
+                    {{#if this.email_enviado}}
+                      <span class="badge-success">E-mail enviado</span>
+                    {{else}}
+                      <span class="badge-warning">E-mail não enviado</span>
+                    {{/if}}
+                    {{#if this.codigo_rastreio}}
+                      <p class="mt-2 font-mono text-xs text-slate-400">Rastreio: {{this.codigo_rastreio}}</p>
+                    {{/if}}
+                  </div>
+                  {{#if (eq ../tipo "aprovado")}}
+                    <div>
+                      <p class="label-light text-slate-500">Código de rastreio (opcional)</p>
+                      <form method="POST" action="/enviar-rastreio" class="flex gap-2">
+                        <input type="hidden" name="pedidoId" value="{{this.id}}">
+                        <input type="text" name="codigo" value="{{this.codigo_rastreio}}" placeholder="ex: BR123456789"
+                               class="w-full flex-1 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:border-brand-400 focus:outline-none">
+                        <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-pix-500 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-pix-400">
+                          {{icone "send" class="w-3.5 h-3.5"}} Enviar
+                        </button>
+                      </form>
+                    </div>
+                  {{/if}}
+                </div>
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="flex flex-col items-center gap-3 px-6 py-16 text-center">
+      <span class="grid h-12 w-12 place-items-center rounded-xl bg-white/5 text-slate-500">{{icone "package" class="w-6 h-6"}}</span>
+      <p class="text-sm text-slate-400">{{vazio}}</p>
+    </div>
+  {{/if}}
+</div>
