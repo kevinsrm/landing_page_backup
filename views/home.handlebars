@@ -1,480 +1,555 @@
-{{#if (eq this.updated 'true')}}
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-      M.toast({
-        html: 'O produto foi atualizado!',
-        displayLength: 9000,
-        classes: 'rounded green'
-      });
-    });
-  </script>
-  {{/if}}
-<div style="margin-top:-20px !important" class="section no-pad-bot blue-grey lighten-5" id="index-banner">
-    <div class="container">
-        <br><br>
-        <h1 class="header center orange-text text-darken-2" style="font-weight: 800;">Solução Incrível para Sua Rotina</h1>
-        <div class="row center">
-            <h5 class="header col s12 light grey-text text-darken-3">{{resultado_home.descricao}}</h5>
-        </div>
-        <div class="carousel carousel-slider">
-    <a class="carousel-item" href="#one!"><img class="materialboxed" src="uploads/{{imagem.caminho1}}"></a>
-    <a class="carousel-item" href="#two!"><img class="materialboxed responsive-img" src="uploads/{{imagem.caminho2}}"></a>
-    <a class="carousel-item" href="#three!"><img class="materialboxed responsive-img" src="uploads/{{imagem.caminho3}}"></a>
-    <a class="carousel-item" href="#four!"><img class="materialboxed responsive-img" src="uploads/{{imagem.caminho4}}"></a>
-    
-  </div>
-  <br><br>
-        <div class="row center">
-            <a href="#setcheckout" class="btn-large waves-effect waves-light orange darken-2 pulse" style="border-radius: 30px; font-weight: bold;">
-                QUERO O MEU AGORA
-            </a>
-        </div>
-        
-            
-        
-        <br><br>
-    </div>
-</div>
-
-<div class="container">
-    <div class="section">
-        <div class="row">
-            <div class="col s12 m4">
-                <div class="icon-block center">
-                    <h2 class="orange-text"><i class="material-icons">local_shipping</i></h2>
-                    <h5 style="font-weight: 600;">Frete Grátis</h5>
-                    <p class="light">Receba no conforto da sua casa com rastreamento completo e seguro diretamente dos nossos fornecedores premium.</p>
-                </div>
-            </div>
-
-            <div class="col s12 m4">
-                <div class="icon-block center">
-                    <h2 class="orange-text"><i class="material-icons">verified_user</i></h2>
-                    <h5 style="font-weight: 600;">Garantia Total</h5>
-                    <p class="light">Não gostou? Nós devolvemos seu dinheiro. Sua satisfação é nossa prioridade número um em todas as compras.</p>
-                </div>
-            </div>
-
-            <div class="col s12 m4">
-                <div class="icon-block center">
-                    <h2 class="orange-text"><i class="material-icons">flash_on</i></h2>
-                    <h5 style="font-weight: 600;">Qualidade Premium</h5>
-                    <p class="light">Selecionamos apenas produtos testados e aprovados pelos melhores especialistas do mercado global.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="grey lighten-4" style="padding: 40px 0;">
-
-    <div class="container">
-        <h4 class="center-align" style="margin-bottom: 40px;">O que nossos clientes dizem</h4>
-        
-        
-        <div class="row">
-            <div class="col s12 m6">
-                <div class="card-panel white z-depth-1">
-                <div style="display: flex; flex-direction: column; justify-content: space-between" class="comment">
-               <img style="border-radius: 50%" width="70px" height="70px"src="images/joao.jpg" class="responsive-image">
-                <span style="margin-top:10px !important; float: left !important" class="black-text"><strong>- João Silva</strong></span>
-                </div>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                    <p class="italic">Chegou antes do prazo e a qualidade me surpreendeu positivamente. Valeu cada centavo!</p>
-                    
-                     
-                </div>
-            </div>
-            
-            <div class="col s12 m6">
-                <div class="card-panel white z-depth-1">
-                <div style="display: flex; flex-direction: column; justify-content: space-between" class="comment">
-               <img style="border-radius: 50%" width="70px" height="70px"src="images/maria.jpg" class="responsive-image">
-                <span style="margin-top:10px !important; float: left !important" class="black-text"><strong>- Maria Vitória</strong></span>
-                </div>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                    <p class="italic">Excelente suporte ao cliente. Tive uma dúvida sobre o rastreio e me responderam na hora.</p>
-                    
-                     
-                </div>
-            </div>
-            
-            
-           <div class="col s12 m6">
-                <div class="card-panel white z-depth-1">
-                <div style="display: flex; flex-direction: column; justify-content: space-between" class="comment">
-               <img style="border-radius: 50%" width="70px" height="70px"src="images/guilherme.jpg" class="responsive-image">
-                <span style="margin-top:10px !important; float: left !important" class="black-text"><strong>- Gui Oliveira</strong></span>
-                </div>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                <span style="margin-top: 0px !important"><i class="material-icons yellow-text">star</i></span>
-                    <p class="italic">A facilidade de pagar por pix foi o que me fez comprar, já me deram o rastreio agora é so esperar chegar.</p>
-                    
-                     
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="comprar" class="section center container" style="padding: 60px 0;">
-    <h3 class="orange-text text-darken-2">Oferta Exclusiva por Tempo Limitado</h3>
-    <!--preço -->
-    <p class="flow-text">De <strike>R$ {{resultado_home.preco_sem_desconto}}</strike> por apenas <strong>R$ {{resultado_home.preco_com_desconto}}</strong></p>
-    <a id="setcheckout" href="#form-checkout" class="btn-large waves-effect waves-light green accent-4 modal-trigger scrollspy" style="font-size: 1.5rem; height: 70px; line-height: 70px; border-radius: 10px;">
-        COMPRAR AGORA <i class="material-icons right">shopping_cart</i>
+{{!-- ============================ NAV ============================ --}}
+<header class="sticky top-0 z-40 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+    <a href="/" class="flex items-center gap-2.5">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow-glow">
+        {{icone "bolt" class="w-5 h-5"}}
+      </span>
+      <span class="font-display text-lg font-bold tracking-tight text-white">{{nomeLoja}}</span>
     </a>
-    <p class="grey-text" style="margin-top: 20px;"><i class="material-icons tiny">lock</i> Pagamento 100% seguro via Mercado Pago</p>
-</div>
 
+    <nav class="hidden items-center gap-8 text-sm font-medium text-slate-300 lg:flex">
+      <a class="transition hover:text-white" href="#produto">Produto</a>
+      <a class="transition hover:text-white" href="#beneficios">Benefícios</a>
+      <a class="transition hover:text-white" href="#depoimentos">Depoimentos</a>
+      <a class="transition hover:text-white" href="/suporte">Suporte</a>
+    </nav>
 
-<script src="https://sdk.mercadopago.com/js/v2"></script>
+    <a href="#checkout" class="btn-primary hidden sm:inline-flex">
+      {{icone "pix" class="w-4 h-4"}} Pagar com Pix
+    </a>
+  </div>
+</header>
 
+{{!-- ============================ HERO ============================ --}}
+<section id="produto" class="relative overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 bg-grid opacity-60"></div>
+  <div class="pointer-events-none absolute -top-40 left-1/2 h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-brand-600/25 blur-[120px]"></div>
+  <div class="pointer-events-none absolute -bottom-32 right-0 h-[320px] w-[320px] rounded-full bg-pix-500/15 blur-[100px]"></div>
 
+  <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
+    <div class="animate-fade-up">
+      <span class="eyebrow">
+        {{icone "sparkle" class="w-3.5 h-3.5"}}
+        Entrega digital imediata
+      </span>
 
+      <h1 class="mt-5 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+        {{produto.nome}}
+      </h1>
 
-<div id="walletBrick_container"></div>
+      <p class="mt-5 max-w-xl whitespace-pre-line text-base leading-relaxed text-slate-400 sm:text-lg">
+        {{resumo produto.descricao 320}}
+      </p>
 
-<div id="form-checkout" class="modal container" style="margin-top: 40px;">
-<!--
-<div id="form-checkout" class="row hide container modal" style="display: none; margin-top: 40px;">
--->
-
-  <form action="/create-preference" method="POST" class="col s12 white z-depth-2" style="padding: 30px; border-radius: 15px;">
-    
-    <h5 class="center-align orange-text text-darken-2" style="margin-bottom: 30px; font-weight: 600;">
-      Preencha seus dados para finalizar
-    </h5>
-
-    <div class="row">
-      <div class="input-field col s12 m6">
-	<label for="nome" class="active">Nome completo</label>
-        <input id="nome" name="nome" type="text" required>
+      <div class="mt-8 flex flex-wrap items-end gap-x-4 gap-y-2">
+        {{#if preco_antigo_formatado}}
+          <span class="text-lg text-slate-500 line-through">{{preco_antigo_formatado}}</span>
+        {{/if}}
+        <span class="font-display text-4xl font-extrabold text-white sm:text-5xl">{{preco_formatado}}</span>
+        {{#if desconto}}
+          <span class="badge-success">-{{desconto}}% hoje</span>
+        {{/if}}
       </div>
 
-      <div class="input-field col s12 m6">
-	<label for="email">Email</label>
-        <input id="email" name="email" type="email" required>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <a href="#checkout" class="btn-pix btn-lg">
+          {{icone "pix" class="w-5 h-5"}} Comprar com Pix
+        </a>
+        <a href="#beneficios" class="btn-ghost btn-lg">Ver detalhes</a>
       </div>
+
+      <ul class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
+        <li class="flex items-center gap-2">{{icone "bolt" class="w-4 h-4 text-pix-400"}} Liberação automática</li>
+        <li class="flex items-center gap-2">{{icone "mail" class="w-4 h-4 text-pix-400"}} Download por e-mail</li>
+        <li class="flex items-center gap-2">{{icone "shield" class="w-4 h-4 text-pix-400"}} Compra protegida</li>
+      </ul>
     </div>
 
-    <div class="row">
-      <div class="input-field col s12 m6">
-	<label for="cpf">CPF</label>
-        <input id="cpf" name="cpf" type="text" maxlength="12" required>
-      </div>
+    {{!-- Galeria do produto --}}
+    <div class="animate-fade-up" style="animation-delay:.1s">
+      <div class="card relative overflow-hidden p-3">
+        <div class="relative aspect-square overflow-hidden rounded-xl bg-slate-900">
+          {{#if imagem.caminho1}}
+            <img id="img-principal" src="/uploads/{{imagem.caminho1}}" alt="{{produto.nome}}"
+                 class="h-full w-full object-cover transition duration-500">
+          {{else}}
+            <div class="grid h-full w-full place-items-center text-slate-600">
+              {{icone "image" class="w-16 h-16"}}
+            </div>
+          {{/if}}
+          <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+        </div>
 
-      <div class="input-field col s12 m6">
-	<label for="telefone">Telefone</label>
-        <input id="telefone" name="telefone" type="text" maxlength="15" required>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="input-field col s12 m4">
-	<label for="cep">CEP</label>
-        <input id="cep" name="cep" type="text" maxlength="8" required>
-      </div>
-
-      <div class="input-field col s12 m8">
-	<label for="endereco">Endereço</label>
-        <input id="endereco" name="endereco" type="text" required>
-      </div>
-
-      <div class="input-field col s12 m4">
-	<label for="numero">Número</label>
-        <input id="numero" name="numero" type="text" required>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="input-field col s12 m6">
-	<label for="bairro">Bairro</label>
-        <input id="bairro" name="bairro" type="text" required>
-      </div>
-
-      <div class="input-field col s12 m6">
-	<label for="complemento">Complemento (opcional)</label>
-        <input id="complemento" name="complemento" type="text">
+        <div class="mt-3 grid grid-cols-4 gap-3">
+          {{#each (array imagem.caminho1 imagem.caminho2 imagem.caminho3 imagem.caminho4)}}
+            {{#if this}}
+              <button type="button" data-img="/uploads/{{this}}"
+                      class="thumb group relative aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 transition hover:ring-brand-400/70">
+                <img src="/uploads/{{this}}" alt="Imagem do produto" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
+              </button>
+            {{/if}}
+          {{/each}}
+        </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="row">
-      <div class="input-field col s12 m5">
-	<label for="cidade">Cidade</label>
-        <input id="cidade" name="cidade" type="text" required>
-      </div>
-
-      <div class="input-field col s12 m3">
-	<label for="estado">Estado (UF)</label>
-        <input id="estado" name="estado" type="text" maxlength="2" required>
-      </div>
-
+{{!-- ============================ BENEFÍCIOS ============================ --}}
+<section id="beneficios" class="border-y border-white/5 bg-slate-900/40">
+  <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
+    <div class="max-w-2xl">
+      <span class="eyebrow">Por que comprar aqui</span>
+      <h2 class="section-title mt-4">Tudo resolvido em minutos, sem complicação</h2>
+      <p class="mt-3 text-slate-400">
+        Pagou via Pix, recebeu o acesso. Simples assim — o link de download chega no seu e-mail automaticamente.
+      </p>
     </div>
 
-    <div class="row center" style="margin-top: 30px;">
-      <button id="finalizar" type="submit" class="btn-large waves-effect waves-light green accent-4" style="width: 100%; border-radius: 10px; font-size: 1.3rem;">
-        FINALIZAR COMPRA <i class="material-icons right">lock</i>
-      </button>
+    <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="card p-6 transition hover:-translate-y-1 hover:border-brand-400/40">
+        <span class="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/15 text-brand-300">{{icone "bolt" class="w-5 h-5"}}</span>
+        <h3 class="mt-4 font-display text-lg font-semibold text-white">Acesso imediato</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">A confirmação do Pix leva segundos. Assim que o pagamento é aprovado, o download é liberado.</p>
+      </div>
+      <div class="card p-6 transition hover:-translate-y-1 hover:border-brand-400/40">
+        <span class="grid h-11 w-11 place-items-center rounded-xl bg-pix-500/15 text-pix-300">{{icone "mail" class="w-5 h-5"}}</span>
+        <h3 class="mt-4 font-display text-lg font-semibold text-white">Envio por e-mail</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">Você recebe um e-mail com o botão de download e o guia de instalação completo dentro do pacote.</p>
+      </div>
+      <div class="card p-6 transition hover:-translate-y-1 hover:border-brand-400/40">
+        <span class="grid h-11 w-11 place-items-center rounded-xl bg-brand-500/15 text-brand-300">{{icone "shield" class="w-5 h-5"}}</span>
+        <h3 class="mt-4 font-display text-lg font-semibold text-white">Compra protegida</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">Pagamento processado pelo Mercado Pago. Garantia de 7 dias para pedir reembolso.</p>
+      </div>
+      <div class="card p-6 transition hover:-translate-y-1 hover:border-brand-400/40">
+        <span class="grid h-11 w-11 place-items-center rounded-xl bg-pix-500/15 text-pix-300">{{icone "users" class="w-5 h-5"}}</span>
+        <h3 class="mt-4 font-display text-lg font-semibold text-white">Suporte de verdade</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">Dúvida na instalação? Responda o e-mail de compra e nossa equipe ajuda você.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{{!-- ============================ DEPOIMENTOS ============================ --}}
+<section id="depoimentos" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
+  <div class="max-w-2xl">
+    <span class="eyebrow">Depoimentos</span>
+    <h2 class="section-title mt-4">Quem comprou, recomenda</h2>
+  </div>
+
+  <div class="mt-10 grid gap-5 md:grid-cols-3">
+    <figure class="card p-6">
+      <div class="flex gap-1 text-amber-400">
+        {{#each (array 1 2 3 4 5)}}{{icone "star" class="w-4 h-4" fill="true"}}{{/each}}
+      </div>
+      <blockquote class="mt-4 text-sm leading-relaxed text-slate-300">
+        “Paguei pelo Pix e em menos de um minuto o script já estava no meu e-mail. Instalação tranquila, tudo documentado.”
+      </blockquote>
+      <figcaption class="mt-5 flex items-center gap-3">
+        <img src="/images/joao.jpg" alt="João Silva" class="h-10 w-10 rounded-full object-cover ring-2 ring-white/10">
+        <div>
+          <p class="text-sm font-semibold text-white">João Silva</p>
+          <p class="text-xs text-slate-500">Compra verificada</p>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card p-6">
+      <div class="flex gap-1 text-amber-400">
+        {{#each (array 1 2 3 4 5)}}{{icone "star" class="w-4 h-4" fill="true"}}{{/each}}
+      </div>
+      <blockquote class="mt-4 text-sm leading-relaxed text-slate-300">
+        “Tive uma dúvida na instalação e o suporte respondeu no mesmo dia pelo e-mail da compra. Recomendo demais.”
+      </blockquote>
+      <figcaption class="mt-5 flex items-center gap-3">
+        <img src="/images/maria.jpg" alt="Maria Vitória" class="h-10 w-10 rounded-full object-cover ring-2 ring-white/10">
+        <div>
+          <p class="text-sm font-semibold text-white">Maria Vitória</p>
+          <p class="text-xs text-slate-500">Compra verificada</p>
+        </div>
+      </figcaption>
+    </figure>
+
+    <figure class="card p-6">
+      <div class="flex gap-1 text-amber-400">
+        {{#each (array 1 2 3 4 5)}}{{icone "star" class="w-4 h-4" fill="true"}}{{/each}}
+      </div>
+      <blockquote class="mt-4 text-sm leading-relaxed text-slate-300">
+        “O copia e cola do Pix facilitou muito. Comprei pelo celular e já baixei o arquivo na hora.”
+      </blockquote>
+      <figcaption class="mt-5 flex items-center gap-3">
+        <img src="/images/guilherme.jpg" alt="Guilherme Oliveira" class="h-10 w-10 rounded-full object-cover ring-2 ring-white/10">
+        <div>
+          <p class="text-sm font-semibold text-white">Guilherme Oliveira</p>
+          <p class="text-xs text-slate-500">Compra verificada</p>
+        </div>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+{{!-- ============================ CHECKOUT PIX ============================ --}}
+<section id="checkout" class="relative border-t border-white/5 bg-slate-900/40">
+  <div class="pointer-events-none absolute inset-x-0 top-0 h-64 bg-pix-500/10 blur-[120px]"></div>
+
+  <div class="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
+    <div class="mx-auto max-w-2xl text-center">
+      <span class="eyebrow">{{icone "pix" class="w-3.5 h-3.5"}} Checkout transparente</span>
+      <h2 class="section-title mt-4">Finalize sua compra com Pix</h2>
+      <p class="mt-3 text-slate-400">
+        Preencha seus dados, escaneie o QR Code (ou use o copia e cola) e receba o download no seu e-mail.
+      </p>
     </div>
 
-    <p class="center grey-text" style="margin-top: 15px;">
-      <i class="material-icons tiny">lock</i> Seus dados estão seguros
-    </p>
+    <div class="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-[1.15fr_.85fr]">
+      {{!-- Formulário --}}
+      <div id="painel-formulario" class="card p-6 sm:p-8">
+        <form id="form-pix" class="space-y-5" novalidate>
+          <div>
+            <label class="label" for="nome">Nome completo</label>
+            <input id="nome" name="nome" type="text" autocomplete="name" placeholder="Como no seu documento" class="field" required>
+          </div>
 
-  </form>
-</div>
-<footer class="page-footer grey lighten-2">
-          <div class="container">
-            <div class="row">
-              <div class="col l6 s12">
-                <h5 class="orange-text text-darken-2 center">Footer Content</h5>
-                <p class="orange-text text-darken-2 center">You can use rows and columns here to organize your footer content.</p>
-              </div>
-              <div class="col l4 offset-l2 s12">
-                <h5 class="orange-text text-darken-2 center">Links</h5>
-                <ul class="center">
-                  <li><a class="orange-text text-darken-2 center" href="/suporte">suporte</a></li>
-                  <li><a class="orange-text text-darken-2 center" href="#!">Link 2</a></li>
-                  <li><a class="orange-text text-darken-2 text-darken-3 center" href="#!">Link 3</a></li>
-                  <li><a class="orange-text text-darken-2 text-darken-3 center" href="#!">Link 4</a></li>
-                </ul>
-              </div>
+          <div>
+            <label class="label" for="email">E-mail</label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="voce@email.com" class="field" required>
+            <p class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
+              {{icone "mail" class="w-3.5 h-3.5"}} O link de download é enviado para este e-mail.
+            </p>
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="label" for="cpf">CPF</label>
+              <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" class="field" required>
+            </div>
+            <div>
+              <label class="label" for="telefone">Telefone <span class="normal-case text-slate-600">(opcional)</span></label>
+              <input id="telefone" name="telefone" type="tel" inputmode="numeric" maxlength="15" placeholder="(00) 00000-0000" class="field">
             </div>
           </div>
-          <div class="footer-copyright">
-            <div class="container white-text">
-            © 2014 Copyright Text
-            <a class="white-text right" href="#!">More Links</a>
-            </div>
+
+          <div id="erro-formulario" class="hidden items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-200">
+            {{icone "alert" class="mt-0.5 w-4 h-4 shrink-0"}}
+            <span id="erro-formulario-texto"></span>
           </div>
-        </footer>
 
+          <button id="btn-gerar-pix" type="submit" class="btn-pix btn-lg w-full">
+            {{icone "qr" class="w-5 h-5"}}
+            <span id="btn-gerar-pix-texto">Gerar QR Code Pix</span>
+          </button>
 
+          <p class="flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+            {{icone "lock" class="w-3.5 h-3.5"}} Ambiente seguro · processado pelo Mercado Pago
+          </p>
+        </form>
+      </div>
 
-<script type="text/javascript">
+      {{!-- Painel do QR Code --}}
+      <div id="painel-qr" class="card hidden p-6 sm:p-8">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="font-display text-xl font-bold text-white">Pague com Pix</h3>
+            <p class="mt-1 text-sm text-slate-400">Use o app do seu banco para concluir.</p>
+          </div>
+          <button id="btn-cancelar-qr" type="button" class="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-400 transition hover:text-white">
+            {{icone "x" class="w-4 h-4"}}
+          </button>
+        </div>
 
+        <div class="mt-6 flex justify-center">
+          <div class="rounded-2xl bg-white p-3 shadow-glow">
+            <img id="qr-imagem" alt="QR Code Pix" class="h-56 w-56 object-contain">
+          </div>
+        </div>
+        <p class="mt-3 text-center text-xs text-slate-500">Abra o app do seu banco e escaneie o código acima.</p>
 
-    document.addEventListener('DOMContentLoaded', function() {
-        
-        // Inicializa animações de scroll suave (opcional)
-      M.updateTextFields();
-      setTimeout(() => {
-    M.updateTextFields();
-  }, 500);
-        var scrollspy = document.querySelectorAll('.scrollspy');
-	
-    M.ScrollSpy.init(scrollspy, {throttle: 20});
-    
-	
-	var modal = document.querySelectorAll('.modal');
-        M.Modal.init(modal);
-        var carousel = document.querySelectorAll(".carousel");
-   
-    var optionsCarousel = {fullWidth: true, duration: 200, indicators: true};
-    M.Carousel.init(carousel, optionsCarousel);
-    
-    setInterval(()=>{
-      let instanceCarousel = M.Carousel.getInstance(carousel[0]);
-      instanceCarousel.next()
-      }, 5000)
-    });
+        <div class="mt-5 flex items-center justify-between text-sm">
+          <span class="text-slate-400">Valor</span>
+          <span id="qr-valor" class="font-display text-lg font-bold text-white">R$ 0,00</span>
+        </div>
+        <div class="mt-2 flex items-center justify-between text-sm">
+          <span class="text-slate-400">Expira em</span>
+          <span id="qr-tempo" class="font-mono font-semibold text-pix-300">--:--</span>
+        </div>
 
-	/*
-        var imgs = document.querySelectorAll('.materialboxed');
-    M.Materialbox.init(imgs);
-    */
+        <div class="mt-5">
+          <label class="label">Pix copia e cola</label>
+          <div class="flex gap-2">
+            <input id="qr-codigo" type="text" readonly class="field truncate font-mono text-xs">
+            <button id="btn-copiar" type="button" class="btn-ghost shrink-0 px-4">
+              {{icone "copy" class="w-4 h-4"}} Copiar
+            </button>
+          </div>
+        </div>
 
-    document.getElementById("setcheckout").addEventListener("click", (e) => {
-    e.preventDefault();
-    const form = document.getElementById("form-checkout");
-    form.classList.remove("hide");
-    form.style.display = "block";
-});
+        <div class="mt-6 flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-slate-400">
+          <span class="relative flex h-2.5 w-2.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-pix-400 opacity-75"></span>
+            <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-pix-500"></span>
+          </span>
+          Verificando o pagamento automaticamente…
+        </div>
+      </div>
 
-    document.querySelector("form").addEventListener("submit", () => {
-    const finalizar = document.getElementById("finalizar");
-    finalizar.innerText = "PROCESSANDO...";
-    finalizar.classList.add("disabled");
-});
+      {{!-- Painel de sucesso --}}
+      <div id="painel-sucesso" class="card hidden p-8 text-center">
+        <span class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-300 animate-pulse-ring">
+          {{icone "check" class="w-8 h-8"}}
+        </span>
+        <h3 class="mt-5 font-display text-2xl font-bold text-white">Pagamento aprovado!</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">
+          Enviamos o link de download para <strong id="sucesso-email" class="text-white"></strong>.
+          Verifique também a caixa de spam.
+        </p>
+        <a href="/suporte" class="btn-ghost mt-6 w-full">Preciso de ajuda</a>
+      </div>
 
+      {{!-- Painel de falha --}}
+      <div id="painel-falha" class="card hidden p-8 text-center">
+        <span class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-rose-500/15 text-rose-300">
+          {{icone "alert" class="w-8 h-8"}}
+        </span>
+        <h3 class="mt-5 font-display text-2xl font-bold text-white">Pagamento não aprovado</h3>
+        <p class="mt-2 text-sm leading-relaxed text-slate-400">
+          Não identificamos o pagamento. Você pode gerar um novo QR Code sem custo.
+        </p>
+        <button id="btn-tentar-novamente" type="button" class="btn-pix mt-6 w-full">Gerar novo QR Code</button>
+      </div>
 
-document.getElementById("cpf").addEventListener("input", (e) => {
-    let value = e.target.value;
+      {{!-- Resumo --}}
+      <aside class="card-strong h-fit p-6 sm:p-8">
+        <h3 class="font-display text-lg font-semibold text-white">Resumo do pedido</h3>
+        <dl class="mt-5 space-y-3 text-sm">
+          <div class="flex items-start justify-between gap-4">
+            <dt class="text-slate-400">Produto</dt>
+            <dd class="text-right font-medium text-white">{{produto.nome}}</dd>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <dt class="text-slate-400">Entrega</dt>
+            <dd class="text-right font-medium text-pix-300">Digital · imediata</dd>
+          </div>
+          <div class="flex items-start justify-between gap-4">
+            <dt class="text-slate-400">Forma de pagamento</dt>
+            <dd class="text-right font-medium text-white">Pix</dd>
+          </div>
+        </dl>
+        <div class="my-5 h-px bg-white/10"></div>
+        <div class="flex items-end justify-between">
+          <span class="text-sm text-slate-400">Total</span>
+          <span class="font-display text-3xl font-extrabold text-white">{{preco_formatado}}</span>
+        </div>
+        <ul class="mt-6 space-y-2.5 text-sm text-slate-400">
+          <li class="flex items-center gap-2">{{icone "check" class="w-4 h-4 text-pix-400"}} Acesso liberado na hora</li>
+          <li class="flex items-center gap-2">{{icone "check" class="w-4 h-4 text-pix-400"}} Guia de instalação incluso</li>
+          <li class="flex items-center gap-2">{{icone "check" class="w-4 h-4 text-pix-400"}} 7 dias de garantia</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</section>
 
-    // 1. Remove tudo que não for número
-    value = value.replace(/\D/g, "");
+{{!-- ============================ FOOTER ============================ --}}
+<footer class="border-t border-white/5 bg-slate-950">
+  <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+    <div class="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
+      <div class="flex items-center gap-2.5">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">{{icone "bolt" class="w-5 h-5"}}</span>
+        <div>
+          <p class="font-display font-bold text-white">{{nomeLoja}}</p>
+          <p class="text-xs text-slate-500">Produtos digitais com entrega automática</p>
+        </div>
+      </div>
+      <nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+        <a href="/" class="transition hover:text-white">Início</a>
+        <a href="/suporte" class="transition hover:text-white">Suporte</a>
+        <a href="/suporte/reembolso" class="transition hover:text-white">Reembolso</a>
+      </nav>
+    </div>
+    <div class="mt-8 flex flex-col gap-2 border-t border-white/5 pt-6 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+      <p>© {{produto.nome}} · {{nomeLoja}}. Todos os direitos reservados.</p>
+      <p class="flex items-center gap-1.5">{{icone "lock" class="w-3.5 h-3.5"}} Pagamentos seguros via Mercado Pago</p>
+    </div>
+  </div>
+</footer>
 
-    // 2. Limita a 11 dígitos (tamanho padrão do CPF)
-    value = value.substring(0, 11);
-
-    // 3. Aplica a máscara: 000000000-00
-    // O regex abaixo pega os primeiros 9 dígitos e separa os 2 últimos com um traço
-    value = value.replace(/^(\d{9})(\d)/, "$1-$2");
-
-    // 4. Atualiza o valor do campo
-    e.target.value = value;
-});
-
-document.getElementById("telefone").addEventListener("input", (e) => {
-    let value = e.target.value;
-
-    // 1. Remove tudo que não for número
-    value = value.replace(/\D/g, "");
-
-    // 2. Limita a 11 dígitos
-    value = value.substring(0, 11);
-
-    // 3. Aplica a máscara dinamicamente
-    if (value.length > 10) {
-        // Celular: (00) 00000-0000
-        value = value.replace(/^(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-    } else if (value.length > 6) {
-        // Fixo ou Celular em digitação: (00) 0000-0000
-        value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
-    } else if (value.length > 2) {
-        // Apenas o DDD: (00) 0...
-        value = value.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
-    } else if (value.length > 0) {
-        // Iniciando o DDD: (0...
-        value = value.replace(/^(\d*)/, "($1");
-    }
-
-    e.target.value = value;
-});
-
-document.getElementById("email").addEventListener("blur", function(e) {
-    const email = e.target.value.trim().toLowerCase();
-    
-    // 1. Regex Robusta: Garante estrutura e proíbe caracteres especiais/duplos arrobas
-    // Aceita letras, números, pontos e hífens antes do @
-    const regexEstrutura = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-
-    // 2. Lista de Domínios Permitidos (White Label)
-    const dominiosPermitidos = ['gmail.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'yahoo.com', 'msn.com'];
-
-    if (email.length > 0) {
-        const dominioDigitado = email.split('@')[1];
-
-        // Validação de dois níveis: Estrutura + Domínio Específico
-        if (!regexEstrutura.test(email) || !dominiosPermitidos.includes(dominioDigitado)) {
-            
-            M.toast({
-                html: '<span><i class="material-icons left">error</i> Use um e-mail válido (Gmail, Outlook, etc).</span>',
-                classes: 'red darken-2 rounded',
-                displayLength: 4000
-            });
-
-            // Opcional: Marcar o input visualmente (Classe do Materialize)
-            e.target.classList.add("invalid");
-        } else {
-            e.target.classList.remove("invalid");
-            e.target.classList.add("valid");
-        }
-    }
-});
-
-
-let cep = document.getElementById("cep");
-let in_endereco = document.getElementById("endereco");
-let in_bairro = document.getElementById("bairro");
-let in_cidade = document.getElementById("cidade");
-let in_estado = document.getElementById("estado");
-
-
-cep.addEventListener("change", async ()=>{
-    try{
-        let response = await fetch(`https://viacep.com.br/ws/${cep.value}/json`);
-        let data = await response.json();
-	let body = JSON.stringify(data);
-	let error = JSON.parse(body);
-	
-	let endereco1 = JSON.parse(body);
-        let bairro1 = JSON.parse(body);
-        let cidade1 = JSON.parse(body);
-        let estadoUf = JSON.parse(body);
-M.updateTextFields();
- setTimeout(() => {
-    M.updateTextFields();
-  }, 500);
-  
-        if(error.erro){
-	    M.toast({
-  html: 'Insira um cep válido!',
-  displayLength: 7000, // Tempo em milissegundos
-  classes: 'rounded'
-});;
-	in_endereco.value = "";
-	in_bairro.value = "";
-	in_cidade.value = "";
-	in_estado.value = "";
-	}
-	else{
-	   
-	   in_endereco.value = endereco1.logradouro;
-	   in_bairro.value = bairro1.bairro;
-	   in_cidade.value = cidade1.localidade;
-	   in_estado.value = estadoUf.estado;
-	}
-    }
-    catch(error){
-	M.toast({
-  html: 'Insira um cep válido!',
-  displayLength: 7000, // Tempo em milissegundos
-  classes: 'rounded'
-});;
-    }
-})
-</script>
-
-<!--
+{{!-- ============================ SCRIPTS ============================ --}}
 <script>
+(() => {
+  const $ = (sel) => document.querySelector(sel);
 
-    //const mp = new MercadoPago("APP_USR-6277e7d2-5d69-4c57-8cb7-73069aa43cdc");
-    const form = document.getElementById("form-checkout");    
-    const finalizar = document.getElementById("finalizar");
-
-    document.getElementById("setcheckout").addEventListener("click", async (e) => {
-        e.preventDefault(); // Impede o link de recarregar a página
-        form.classList.remove("hide");
-        const btn = e.target;
-        btn.innerText = "PROCESSANDO...";
-        btn.classList.add("disabled");
-        
-        finalizar.innerText = "PROCESSANDO...";
-        finalizar.classList.add("disabled");
-        setTimeout(()=>{
-          form.classList.add("hide");
-        }, 2000)
-        try {
-            // 1. Chama sua rota do backend
-            //const response = await fetch('/create-preference');
-            //const data = await response.json();
-
-            //if (data.preference_id) {
-                // 2. Redireciona direto para o checkout do Mercado Pago
-                // Essa é a forma mais rápida para landing pages de conversão
-               // window.location.href = data.preference_url;
-            //} else {
-                //alert("Erro ao gerar pagamento.");
-                //btn.innerText = "FINALIZAR COMPRA";
-                //btn.classList.remove("disabled");
-            }
-        } catch (error) {
-            //console.error("Erro:", error);
-            //alert("Erro de conexão.");
-        }
+  /* ---------- Galeria ---------- */
+  const imgPrincipal = $("#img-principal");
+  document.querySelectorAll(".thumb").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      if (!imgPrincipal) return;
+      imgPrincipal.style.opacity = "0";
+      setTimeout(() => {
+        imgPrincipal.src = botao.dataset.img;
+        imgPrincipal.style.opacity = "1";
+      }, 160);
     });
+  });
+
+  /* ---------- Toast ---------- */
+  function toast(mensagem, tipo = "info") {
+    const cores = {
+      info: "border-white/10 bg-slate-900 text-slate-100",
+      erro: "border-rose-500/40 bg-rose-950/90 text-rose-100",
+      ok: "border-emerald-500/40 bg-emerald-950/90 text-emerald-100",
+    };
+    const el = document.createElement("div");
+    el.className = `fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-xl border px-4 py-3 text-sm shadow-2xl animate-pop-in ${cores[tipo] || cores.info}`;
+    el.textContent = mensagem;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4200);
+  }
+
+  function mostrarErro(texto) {
+    const caixa = $("#erro-formulario");
+    if (!texto) return caixa.classList.add("hidden");
+    $("#erro-formulario-texto").textContent = texto;
+    caixa.classList.remove("hidden");
+    caixa.classList.add("flex");
+  }
+
+  /* ---------- Máscaras ---------- */
+  $("#cpf").addEventListener("input", (e) => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+    v = v.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    e.target.value = v;
+  });
+
+  $("#telefone").addEventListener("input", (e) => {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+    if (v.length > 6) v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+    else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/, "($1) $2");
+    else if (v.length > 0) v = v.replace(/(\d*)/, "($1");
+    e.target.value = v;
+  });
+
+  /* ---------- Checkout Pix ---------- */
+  let intervaloStatus = null;
+  let intervaloTempo = null;
+
+  function limparIntervalos() {
+    clearInterval(intervaloStatus);
+    clearInterval(intervaloTempo);
+    intervaloStatus = null;
+    intervaloTempo = null;
+  }
+
+  function mostrar(painel) {
+    ["#painel-formulario", "#painel-qr", "#painel-sucesso", "#painel-falha"].forEach((id) => {
+      const el = document.querySelector(id);
+      if (el) el.classList.add("hidden");
+    });
+    if (painel) document.querySelector(painel).classList.remove("hidden");
+  }
+
+  function iniciarContador(expiraEm) {
+    const alvo = new Date(expiraEm).getTime();
+    const el = $("#qr-tempo");
+    const tick = () => {
+      const restante = alvo - Date.now();
+      if (Number.isNaN(alvo)) return;
+      if (restante <= 0) {
+        el.textContent = "expirado";
+        clearInterval(intervaloTempo);
+        return;
+      }
+      const min = Math.floor(restante / 60000);
+      const seg = Math.floor((restante % 60000) / 1000);
+      el.textContent = `${String(min).padStart(2, "0")}:${String(seg).padStart(2, "0")}`;
+    };
+    tick();
+    intervaloTempo = setInterval(tick, 1000);
+  }
+
+  function consultarStatus(pedidoId) {
+    intervaloStatus = setInterval(async () => {
+      try {
+        const resposta = await fetch(`/pagamento/status/${pedidoId}`);
+        const dados = await resposta.json();
+        if (dados.status === "approved") {
+          limparIntervalos();
+          mostrar("#painel-sucesso");
+          toast("Pagamento aprovado! Verifique seu e-mail.", "ok");
+        } else if (dados.status === "rejected" || dados.status === "cancelled") {
+          limparIntervalos();
+          mostrar("#painel-falha");
+        }
+      } catch (erro) {
+        console.warn("falha ao consultar status:", erro);
+      }
+    }, 4000);
+  }
+
+  $("#form-pix").addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    mostrarErro(null);
+
+    const nome = $("#nome").value.trim();
+    const email = $("#email").value.trim();
+    const cpf = $("#cpf").value.trim();
+
+    if (nome.length < 3) return mostrarErro("Informe seu nome completo.");
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return mostrarErro("Informe um e-mail válido para receber o download.");
+    if (cpf.replace(/\D/g, "").length !== 11) return mostrarErro("Informe um CPF válido.");
+
+    const botao = $("#btn-gerar-pix");
+    const textoBotao = $("#btn-gerar-pix-texto");
+    botao.disabled = true;
+    textoBotao.textContent = "Gerando QR Code…";
+
+    try {
+      const resposta = await fetch("/pagamento/pix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, cpf, telefone: $("#telefone").value.trim() }),
+      });
+      const dados = await resposta.json();
+
+      if (!dados.ok) throw new Error(dados.erro || "Não foi possível gerar o QR Code.");
+
+      $("#sucesso-email").textContent = email;
+      $("#qr-valor").textContent = dados.valor;
+      $("#qr-codigo").value = dados.qr_code;
+      $("#qr-imagem").src = dados.qr_code_base64
+        ? `data:image/png;base64,${dados.qr_code_base64}`
+        : `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(dados.qr_code)}`;
+
+      mostrar("#painel-qr");
+      iniciarContador(dados.expira_em);
+      consultarStatus(dados.pedido_id);
+    } catch (erro) {
+      mostrarErro(erro.message);
+      toast(erro.message, "erro");
+    } finally {
+      botao.disabled = false;
+      textoBotao.textContent = "Gerar QR Code Pix";
+    }
+  });
+
+  $("#btn-copiar").addEventListener("click", async () => {
+    const codigo = $("#qr-codigo");
+    try {
+      await navigator.clipboard.writeText(codigo.value);
+    } catch {
+      codigo.select();
+      document.execCommand("copy");
+    }
+    toast("Código Pix copiado!", "ok");
+  });
+
+  function voltarAoFormulario() {
+    limparIntervalos();
+    mostrar("#painel-formulario");
+  }
+
+  $("#btn-cancelar-qr").addEventListener("click", voltarAoFormulario);
+  $("#btn-tentar-novamente").addEventListener("click", voltarAoFormulario);
+})();
 </script>
--->
