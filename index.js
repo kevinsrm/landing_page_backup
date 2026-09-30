@@ -7,9 +7,16 @@
  *   GET  /                          landing page
  *   POST /pagamento/pix             cria o pagamento PIX (QR Code + copia e cola)
  *   GET  /pagamento/status/:id      polling do status do pagamento
+ *   POST /pagamento/verificar/:id   "já paguei" — consulta o MP na hora
  *   POST /webhook                   notificação do Mercado Pago
+ *   GET  /recuperar                 cliente recupera o acesso sem suporte
  *   GET  /dash                      painel administrativo
  *   POST /painel/link-download      salva o link enviado no e-mail de download
+ *   POST /painel/verificar-pendentes verifica agora todos os pendentes
+ *   POST /tarefas/reconciliar       gatilho para cron externo (token)
+ *
+ * Além disso, lib/reconciliacao.js roda a cada X minutos dentro do
+ * servidor verificando os pedidos que ainda não foram confirmados.
  * ------------------------------------------------------------------
  */
 import express from "express";
@@ -40,12 +47,21 @@ import {
   enviarEmailRastreio,
   getLinkDownload,
 } from "./lib/email.js";
+import {
+  iniciarAgendadorReconciliacao,
+  reconciliarAgora,
+  statusReconciliacao,
+} from "./lib/reconciliacao.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 const NOME_LOJA = process.env.NOME_LOJA || "kevinsrm.shop";
+
+// Atrás do proxy do Render: sem isso o req.ip seria sempre o do proxy,
+// e os limitadores de tentativas (checkout/recuperação) ficariam globais.
+app.set("trust proxy", 1);
 
 /* ------------------------------------------------------------------ */
 /* Middlewares                                                         */
@@ -86,7 +102,19 @@ app.use(
 );
 
 app.use(express.static("public"));
-app.get("/health", (req, res) => res.json({ ok: true, demo: db.DB_MOCK || MP_MOCK }));
+
+/**
+ * Healthcheck. Também serve como "keep-alive": um cron externo batendo
+ * aqui a cada 10 min evita que a instância do Render (plano free) durma.
+ */
+app.get("/health", (req, res) =>
+  res.json({
+    ok: true,
+    demo: db.DB_MOCK || MP_MOCK,
+    verificado_em: new Date().toISOString(),
+    reconciliacao: statusReconciliacao(),
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -292,14 +320,64 @@ app.get("/pagamento/status/:pedidoId", async (req, res) => {
 });
 
 /**
+ * Confere a assinatura (x-signature) que o Mercado Pago envia no webhook.
+ *
+ * Só é exigida quando MP_WEBHOOK_SECRET está preenchido no .env (é a
+ * "chave secreta" da aplicação no painel do Mercado Pago). Sem ela, a
+ * verificação fica desligada — o webhook continua funcionando, mas
+ * qualquer um poderia chamar a URL; como só consultamos o Mercado Pago
+ * (nunca confiamos no status enviado no corpo), o risco é baixo.
+ */
+function assinaturaWebhookValida(req) {
+  const segredo = process.env.MP_WEBHOOK_SECRET;
+  if (!segredo) return true;
+
+  const cabecalho = String(req.headers["x-signature"] || req.query.signature || "");
+  const partes = Object.fromEntries(
+    cabecalho
+      .split(",")
+      .map((item) => item.split("=").map((valor) => valor.trim()))
+      .filter(([chave, valor]) => chave && valor)
+  );
+  if (!partes.ts || !partes.v1) return false;
+
+  const idNotificacao = String(
+    req.query["data.id"] || req.body?.data?.id || req.query.id || req.body?.id || ""
+  ).toLowerCase();
+  const idRequisicao = String(req.headers["x-request-id"] || "");
+
+  // O manifesto oficial inclui o request-id; aceitamos também a variante
+  // sem ele, porque algumas notificações antigas não trazem o cabeçalho.
+  const manifestos = [
+    `id:${idNotificacao};request-id:${idRequisicao};ts:${partes.ts};`,
+    `id:${idNotificacao};ts:${partes.ts};`,
+  ];
+
+  return manifestos.some((manifesto) => {
+    const esperado = crypto.createHmac("sha256", segredo).update(manifesto).digest("hex");
+    const recebido = String(partes.v1).toLowerCase();
+    if (esperado.length !== recebido.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(esperado), Buffer.from(recebido));
+  });
+}
+
+/**
  * Webhook do Mercado Pago.
  * Configure em: https://www.mercadopago.com.br/developers/panel/applications
  * -> Webhooks -> Pagamentos -> https://SEU-DOMINIO/webhook
+ *
+ * Obs.: mesmo que o webhook falhe, a verificação automática
+ * (lib/reconciliacao.js) encontra o pagamento em poucos minutos.
  */
 async function tratarWebhook(req, res) {
   const origem = { ...req.query, ...(req.body || {}) };
   const tipo = origem.type || origem.topic;
   const paymentId = origem["data.id"] || origem.data?.id || origem.id;
+
+  if (!assinaturaWebhookValida(req)) {
+    console.warn("[webhook] assinatura x-signature inválida — notificação recusada.");
+    return res.status(401).json({ ok: false, erro: "assinatura inválida" });
+  }
 
   if (tipo && tipo !== "payment") return res.status(200).json({ ok: true, ignorado: tipo });
   if (!paymentId) return res.status(200).json({ ok: true, ignorado: "sem id de pagamento" });
@@ -323,6 +401,160 @@ async function tratarWebhook(req, res) {
 
 app.post("/webhook", tratarWebhook);
 app.get("/webhook", tratarWebhook);
+
+/* ------------------------------------------------------------------ */
+/* REDE DE SEGURANÇA: consulta sob demanda + recuperação de acesso     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Limitador simples em memória (por IP) para rotas públicas que disparam
+ * consultas ao Mercado Pago ou envio de e-mail.
+ */
+const tentativas = new Map();
+
+function limitar({ janelaMs, maximo, chave = "" }) {
+  const agora = Date.now();
+  // Limpeza preguiçosa para o Map não crescer sem limite.
+  if (tentativas.size > 5000) {
+    for (const [k, v] of tentativas) if (agora > v.expiraEm) tentativas.delete(k);
+  }
+  return (req, res, next) => {
+    const identificador = `${chave}:${req.ip}`;
+    const registro = tentativas.get(identificador);
+    if (!registro || agora > registro.expiraEm) {
+      tentativas.set(identificador, { total: 1, expiraEm: agora + janelaMs });
+      return next();
+    }
+    registro.total++;
+    if (registro.total > maximo) {
+      const segundos = Math.ceil((registro.expiraEm - agora) / 1000);
+      if (req.method === "GET") return res.redirect(`/recuperar?alerta=${encodeURIComponent(`Muitas tentativas. Tente novamente em ${segundos}s.`)}`);
+      return res.status(429).json({ ok: false, erro: `Muitas tentativas. Tente novamente em ${segundos}s.` });
+    }
+    return next();
+  };
+}
+
+const limitarVerificacao = limitar({ janelaMs: 60 * 1000, maximo: 10, chave: "verificar" });
+const limitarRecuperacao = limitar({ janelaMs: 15 * 60 * 1000, maximo: 4, chave: "recuperar" });
+
+/**
+ * "Já paguei" — consulta o Mercado Pago na hora, sem esperar o webhook
+ * nem a rodada automática. Usada pelo botão do checkout e pela página
+ * de recuperação de acesso.
+ */
+app.post("/pagamento/verificar/:pedidoId", limitarVerificacao, async (req, res) => {
+  try {
+    const pedido = await db.getPedidoById(req.params.pedidoId);
+    if (!pedido) return res.status(404).json({ ok: false, erro: "pedido não encontrado" });
+
+    const resultado = await sincronizarPedido(pedido.id);
+    const aprovado = resultado.status === "approved";
+    return res.json({
+      ok: true,
+      status: resultado.status,
+      aprovado,
+      email_enviado: resultado.emailEnviado,
+      erro: resultado.erro || null,
+      mensagem: aprovado
+        ? resultado.emailEnviado
+          ? "Pagamento confirmado! O link de download foi enviado para o seu e-mail."
+          : "Pagamento confirmado, mas o e-mail ainda não pôde ser enviado. Tente novamente em instantes."
+        : "Ainda não identificamos o pagamento. Se você acabou de pagar, aguarde alguns instantes e tente de novo.",
+    });
+  } catch (err) {
+    console.error("[/pagamento/verificar] erro:", err.message);
+    return res.status(500).json({ ok: false, erro: "Não foi possível verificar o pagamento agora." });
+  }
+});
+
+/** Página pública de recuperação de acesso (cliente que não recebeu o e-mail). */
+app.get("/recuperar", (req, res) =>
+  res.render("recuperar", {
+    titulo: "Recuperar meu acesso",
+    nomeLoja: NOME_LOJA,
+    aviso: req.query.aviso || null,
+    alerta: req.query.alerta || null,
+  })
+);
+
+app.post("/recuperar", limitarRecuperacao, async (req, res) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const cpf = String(req.body?.cpf || "").trim();
+
+  if (!emailValido(email) || apenasNumeros(cpf).length !== 11) {
+    return res.redirect(
+      `/recuperar?alerta=${encodeURIComponent("Informe o e-mail usado na compra e o CPF completo do titular.")}`
+    );
+  }
+
+  try {
+    // Antes de dizer "não encontrei", confere no Mercado Pago os pedidos
+    // recentes desse e-mail: o pagamento pode ter sido aprovado sem que o
+    // webhook tivesse chegado até agora.
+    const recentes = await db.listarPedidosPorEmail(email, { limite: 5, horas: 48 });
+    for (const pedido of recentes) {
+      if (pedido.status_pagamento === "approved" && Number(pedido.email_enviado) === 1) continue;
+      try {
+        await sincronizarPedido(pedido.id);
+      } catch (err) {
+        console.warn(`[/recuperar] não foi possível verificar o pedido ${pedido.id}:`, err.message);
+      }
+    }
+
+    const aprovados = await db.buscarPedidosAprovados({ email, cpf, limite: 5 });
+    if (!aprovados.length) {
+      const pendentes = recentes.filter((pedido) => pedido.status_pagamento === "pending");
+      return res.redirect(
+        `/recuperar?alerta=${encodeURIComponent(
+          pendentes.length
+            ? "Encontramos um pedido seu, mas o pagamento ainda não está confirmado. Se você acabou de pagar, aguarde 1 minuto e tente novamente."
+            : "Não encontramos nenhuma compra aprovada com esse e-mail e CPF. Confira os dados ou fale com o suporte."
+        )}`
+      );
+    }
+
+    const pedido = aprovados[0];
+    const resultado = await reenviarEmailDownload(pedido.id);
+    if (resultado.ok) {
+      return res.redirect(
+        `/recuperar?aviso=${encodeURIComponent(
+          `Pronto! Enviamos o link de download para ${pedido.email}. Verifique também a caixa de spam.`
+        )}`
+      );
+    }
+    if (resultado.pulado) {
+      return res.redirect(
+        `/recuperar?alerta=${encodeURIComponent("O envio de e-mail está desativado no servidor. Fale com o suporte.")}`
+      );
+    }
+    return res.redirect(
+      `/recuperar?alerta=${encodeURIComponent(resultado.erro || "Não foi possível enviar o e-mail agora. Tente novamente.")}`
+    );
+  } catch (err) {
+    console.error("[/recuperar] erro:", err.message);
+    return res.redirect(`/recuperar?alerta=${encodeURIComponent("Erro interno ao tentar recuperar o acesso.")}`);
+  }
+});
+
+/**
+ * Gatilho externo da verificação automática (útil em hospedagens com
+ * cron job, ex.: cron-job.org chamando a cada 5 min).
+ * Protegido por token: CRON_SECRET (ou SECRET, se CRON_SECRET não existir).
+ *   POST /tarefas/reconciliar?token=SEGREDO
+ */
+async function tratarTarefaReconciliacao(req, res) {
+  const esperado = process.env.CRON_SECRET || process.env.SECRET;
+  const enviado = req.query.token || req.body?.token || req.headers["x-cron-token"];
+  if (!esperado) return res.status(503).json({ ok: false, erro: "CRON_SECRET não configurado." });
+  if (String(enviado || "") !== String(esperado)) return res.status(401).json({ ok: false, erro: "token inválido" });
+
+  const resumo = await reconciliarAgora({ motivo: "cron externo" });
+  return res.json(resumo);
+}
+
+app.post("/tarefas/reconciliar", tratarTarefaReconciliacao);
+app.get("/tarefas/reconciliar", tratarTarefaReconciliacao);
 
 /* Páginas de retorno (mantidas para links antigos / e-mails). */
 app.get("/success", (req, res) => res.render("success", { titulo: "Pagamento aprovado", nomeLoja: NOME_LOJA }));
@@ -372,6 +604,10 @@ app.get("/dash", requireAdmin, async (req, res, next) => {
       produto: home || {},
       imagemAtual: imagens || {},
       link_download: linkDownload || "",
+      reconciliacao: statusReconciliacao(),
+      pendentes_verificacao: pendentes.filter(
+        (pedido) => pedido.payment_id || Number(pedido.email_enviado) !== 1
+      ).length,
       aviso: req.query.aviso || null,
       alerta: req.query.alerta || null,
     });
@@ -446,6 +682,26 @@ app.post("/painel/link-download", requireAdmin, async (req, res) => {
   } catch (err) {
     console.error("[/painel/link-download] erro:", err.message);
     res.redirect("/dash?alerta=Não%20foi%20possível%20salvar%20o%20link.");
+  }
+});
+
+/**
+ * Verifica na hora todos os pedidos pendentes (botão do painel).
+ * É o mesmo trabalho que a rotina automática faz a cada X minutos.
+ */
+app.post("/painel/verificar-pendentes", requireAdmin, async (req, res) => {
+  try {
+    const resumo = await reconciliarAgora({ motivo: "painel administrativo" });
+    if (resumo.ok === false && resumo.motivo === "já existe uma verificação em andamento") {
+      return res.redirect(`/dash?alerta=${encodeURIComponent("Já existe uma verificação em andamento.")}`);
+    }
+    const mensagem =
+      `${resumo.verificados} pedido(s) verificado(s): ` +
+      `${resumo.aprovados} aprovado(s), ${resumo.emailsEnviados} e-mail(s) enviado(s), ${resumo.erros} erro(s).`;
+    return res.redirect(`/dash?aviso=${encodeURIComponent(mensagem)}`);
+  } catch (err) {
+    console.error("[/painel/verificar-pendentes] erro:", err.message);
+    return res.redirect(`/dash?alerta=${encodeURIComponent("Falha ao verificar os pagamentos pendentes.")}`);
   }
 });
 
@@ -643,6 +899,11 @@ app.use((err, req, res, next) => {
 async function iniciar() {
   await db.testarConexao();
   await db.ensureSchema();
+
+  // Rede de segurança: libera o acesso mesmo que o cliente feche o
+  // navegador antes do webhook do Mercado Pago chegar.
+  iniciarAgendadorReconciliacao();
+
   app.listen(port, () => {
     console.log(`servidor rodando na porta: ${port}`);
     if (db.DB_MOCK) console.log("[demo] DB_MOCK=true — usando banco em memória.");

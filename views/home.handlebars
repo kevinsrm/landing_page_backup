@@ -244,6 +244,11 @@
           <p class="flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
             {{icone "lock" class="w-3.5 h-3.5"}} Ambiente seguro · processado pelo Mercado Pago
           </p>
+
+          <p class="text-center text-xs text-slate-500">
+            Já pagou e não recebeu o e-mail?
+            <a href="/recuperar" class="font-semibold text-brand-300 transition hover:text-brand-200">Recuperar meu acesso</a>
+          </p>
         </form>
       </div>
 
@@ -292,6 +297,14 @@
           </span>
           Verificando o pagamento automaticamente…
         </div>
+
+        <button id="btn-verificar-agora" type="button" class="btn-ghost mt-3 w-full">
+          {{icone "refresh" class="w-4 h-4"}}
+          <span id="btn-verificar-texto">Já fiz o pagamento — verificar agora</span>
+        </button>
+        <p class="mt-2 text-center text-[11px] leading-relaxed text-slate-500">
+          Pode fechar esta página sem medo: assim que o Pix cair, o e-mail com o download é enviado automaticamente.
+        </p>
       </div>
 
       {{!-- Painel de sucesso --}}
@@ -304,7 +317,8 @@
           Enviamos o link de download para <strong id="sucesso-email" class="text-white"></strong>.
           Verifique também a caixa de spam.
         </p>
-        <a href="/suporte" class="btn-ghost mt-6 w-full">Preciso de ajuda</a>
+        <a href="/recuperar" class="btn-primary mt-6 w-full">Não recebi o e-mail · recuperar acesso</a>
+        <a href="/suporte" class="btn-ghost mt-3 w-full">Preciso de ajuda</a>
       </div>
 
       {{!-- Painel de falha --}}
@@ -433,6 +447,41 @@
   /* ---------- Checkout Pix ---------- */
   let intervaloStatus = null;
   let intervaloTempo = null;
+  let pedidoAtual = null;
+  let verificandoAgora = false;
+
+  // Guardamos o pedido em andamento no navegador: se o cliente fechar a
+  // aba (celular sem memória, por exemplo) e voltar depois, retomamos
+  // exatamente de onde parou — com o mesmo QR Code e o status atualizado.
+  const CHAVE_PEDIDO = "loja.pix.pedido";
+  const VALIDADE_PEDIDO_SALVO_MS = 24 * 60 * 60 * 1000;
+
+  function guardarPedido(dados) {
+    try {
+      localStorage.setItem(CHAVE_PEDIDO, JSON.stringify({ ...dados, salvoEm: Date.now() }));
+    } catch {
+      /* navegador sem localStorage (aba anônima restrita) — segue sem retomar */
+    }
+  }
+
+  function lerPedidoGuardado() {
+    try {
+      const dados = JSON.parse(localStorage.getItem(CHAVE_PEDIDO) || "null");
+      if (!dados?.pedido_id) return null;
+      if (Date.now() - (dados.salvoEm || 0) > VALIDADE_PEDIDO_SALVO_MS) return null;
+      return dados;
+    } catch {
+      return null;
+    }
+  }
+
+  function limparPedidoGuardado() {
+    try {
+      localStorage.removeItem(CHAVE_PEDIDO);
+    } catch {
+      /* ignora */
+    }
+  }
 
   function limparIntervalos() {
     clearInterval(intervaloStatus);
@@ -468,23 +517,47 @@
     intervaloTempo = setInterval(tick, 1000);
   }
 
-  function consultarStatus(pedidoId) {
-    intervaloStatus = setInterval(async () => {
-      try {
-        const resposta = await fetch(`/pagamento/status/${pedidoId}`);
-        const dados = await resposta.json();
-        if (dados.status === "approved") {
-          limparIntervalos();
-          mostrar("#painel-sucesso");
-          toast("Pagamento aprovado! Verifique seu e-mail.", "ok");
-        } else if (dados.status === "rejected" || dados.status === "cancelled") {
-          limparIntervalos();
-          mostrar("#painel-falha");
-        }
-      } catch (erro) {
-        console.warn("falha ao consultar status:", erro);
+  /** Mostra o QR Code do pedido (novo ou retomado do navegador). */
+  function abrirPedido(dados) {
+    pedidoAtual = { pedido_id: dados.pedido_id, email: dados.email };
+    $("#sucesso-email").textContent = dados.email;
+    $("#qr-valor").textContent = dados.valor;
+    $("#qr-codigo").value = dados.qr_code || "";
+    $("#qr-imagem").src = dados.qr_code_base64
+      ? `data:image/png;base64,${dados.qr_code_base64}`
+      : `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(dados.qr_code || "")}`;
+
+    mostrar("#painel-qr");
+    iniciarContador(dados.expira_em);
+    consultarStatus(dados.pedido_id);
+  }
+
+  async function checarStatus(rotulo = "polling") {
+    if (!pedidoAtual?.pedido_id) return null;
+    try {
+      const resposta = await fetch(`/pagamento/status/${pedidoAtual.pedido_id}`);
+      const dados = await resposta.json();
+      if (dados.status === "approved") {
+        limparIntervalos();
+        limparPedidoGuardado();
+        mostrar("#painel-sucesso");
+        if (rotulo === "manual") toast("Pagamento confirmado! Verifique seu e-mail.", "ok");
+      } else if (dados.status === "rejected" || dados.status === "cancelled") {
+        limparIntervalos();
+        limparPedidoGuardado();
+        mostrar("#painel-falha");
       }
-    }, 4000);
+      return dados;
+    } catch (erro) {
+      console.warn("falha ao consultar status:", erro);
+      return null;
+    }
+  }
+
+  function consultarStatus(pedidoId) {
+    if (intervaloStatus) clearInterval(intervaloStatus);
+    pedidoAtual = { ...(pedidoAtual || {}), pedido_id: pedidoId };
+    intervaloStatus = setInterval(() => checarStatus(), 4000);
   }
 
   $("#form-pix").addEventListener("submit", async (evento) => {
@@ -514,16 +587,16 @@
 
       if (!dados.ok) throw new Error(dados.erro || "Não foi possível gerar o QR Code.");
 
-      $("#sucesso-email").textContent = email;
-      $("#qr-valor").textContent = dados.valor;
-      $("#qr-codigo").value = dados.qr_code;
-      $("#qr-imagem").src = dados.qr_code_base64
-        ? `data:image/png;base64,${dados.qr_code_base64}`
-        : `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(dados.qr_code)}`;
-
-      mostrar("#painel-qr");
-      iniciarContador(dados.expira_em);
-      consultarStatus(dados.pedido_id);
+      guardarPedido({
+        pedido_id: dados.pedido_id,
+        email,
+        valor: dados.valor,
+        qr_code: dados.qr_code,
+        qr_code_base64: dados.qr_code_base64,
+        expira_em: dados.expira_em,
+      });
+      abrirPedido({ ...dados, email });
+      toast("QR Code gerado! Pode pagar pelo app do banco.", "info");
     } catch (erro) {
       mostrarErro(erro.message);
       toast(erro.message, "erro");
@@ -544,12 +617,69 @@
     toast("Código Pix copiado!", "ok");
   });
 
+  /* ---------- "Já fiz o pagamento" (consulta imediata) ---------- */
+  $("#btn-verificar-agora").addEventListener("click", async () => {
+    if (verificandoAgora || !pedidoAtual?.pedido_id) return;
+    verificandoAgora = true;
+    const botao = $("#btn-verificar-agora");
+    const texto = $("#btn-verificar-texto");
+    const original = texto.textContent;
+    botao.disabled = true;
+    texto.textContent = "Procurando seu pagamento…";
+
+    try {
+      const resposta = await fetch(`/pagamento/verificar/${pedidoAtual.pedido_id}`, { method: "POST" });
+      const dados = await resposta.json();
+      if (dados.aprovado) {
+        limparIntervalos();
+        limparPedidoGuardado();
+        mostrar("#painel-sucesso");
+        if (dados.email_enviado) {
+          toast("Pagamento confirmado! Verifique seu e-mail.", "ok");
+        } else {
+          toast("Pagamento confirmado! Estamos enviando o e-mail…", "ok");
+        }
+      } else {
+        toast(dados.mensagem || "Ainda não identificamos o pagamento.", "info");
+      }
+    } catch (erro) {
+      console.warn("falha ao verificar o pagamento:", erro);
+      toast("Não foi possível verificar agora. Tente novamente.", "erro");
+    } finally {
+      verificandoAgora = false;
+      botao.disabled = false;
+      texto.textContent = original;
+    }
+  });
+
+  // Ao voltar para a aba (o cliente saiu para pagar e voltou), consulta na hora.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && pedidoAtual?.pedido_id) checarStatus();
+  });
+
   function voltarAoFormulario() {
     limparIntervalos();
+    limparPedidoGuardado();
+    pedidoAtual = null;
     mostrar("#painel-formulario");
   }
 
   $("#btn-cancelar-qr").addEventListener("click", voltarAoFormulario);
   $("#btn-tentar-novamente").addEventListener("click", voltarAoFormulario);
+
+  /* ---------- Retoma um pedido que ficou em aberto no navegador ---------- */
+  (async function retomarPedidoSalvo() {
+    const salvo = lerPedidoGuardado();
+    if (!salvo?.qr_code) return;
+    pedidoAtual = { pedido_id: salvo.pedido_id, email: salvo.email };
+    const dados = await checarStatus("retomada");
+    // Se o pedido saiu do estado "pendente", não reabre o QR Code.
+    if (dados && dados.status !== "pending") {
+      if (dados.status !== "approved") limparPedidoGuardado();
+      return;
+    }
+    abrirPedido(salvo);
+    toast("Retomamos o seu Pix em aberto.", "info");
+  })();
 })();
 </script>

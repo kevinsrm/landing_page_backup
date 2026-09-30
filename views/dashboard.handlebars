@@ -377,6 +377,13 @@
                 <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-pix-500/15 text-xs font-bold text-pix-300">4</span>
                 <p class="text-sm leading-relaxed text-slate-400">Se necessário, reenvie o link pela aba <strong class="text-white">Vendas → Aprovadas</strong>.</p>
               </li>
+              <li class="flex gap-3">
+                <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500/15 text-xs font-bold text-emerald-300">5</span>
+                <p class="text-sm leading-relaxed text-slate-400">
+                  Se nada disso acontecer (cliente fechou o navegador e o webhook falhou), a
+                  <strong class="text-white">verificação automática</strong> encontra o pagamento sozinha e envia o e-mail.
+                </p>
+              </li>
             </ol>
 
             <div class="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-200">
@@ -384,6 +391,61 @@
                 {{icone "alert" class="mt-0.5 w-4 h-4 shrink-0"}}
                 <span>Sem o link configurado (ou sem a <code class="font-mono text-xs">API_KEY</code> do Mailgun no <code class="font-mono text-xs">.env</code>), o pagamento é aprovado mas o e-mail não sai.</span>
               </p>
+            </div>
+
+            {{!-- Rede de segurança: verifica sozinho os pagamentos pendentes --}}
+            <div class="mt-6 border-t border-white/5 pt-6">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="flex items-center gap-2 font-display text-base font-semibold text-white">
+                  {{icone "shield" class="w-4.5 h-4.5 text-emerald-300"}} Rede de segurança do Pix
+                </h3>
+                {{#if reconciliacao.ativa}}
+                  <span class="badge-success">ativa{{#if reconciliacao.demo}} · demo{{/if}}</span>
+                {{else}}
+                  <span class="rounded-full border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-semibold text-rose-300">desligada</span>
+                {{/if}}
+              </div>
+
+              <p class="mt-2 text-sm leading-relaxed text-slate-400">
+                O servidor consulta sozinho, a cada {{reconciliacao.intervaloMinutos}} min, os pedidos que ainda constam
+                como pendentes (últimas {{reconciliacao.janelaHoras}}h). Assim o acesso é liberado mesmo quando o cliente
+                paga pelo app do banco e fecha o navegador antes do webhook chegar.
+              </p>
+
+              <dl class="mt-4 space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm">
+                <div class="flex items-center justify-between gap-3">
+                  <dt class="text-slate-500">Última verificação</dt>
+                  <dd class="font-medium text-slate-200">
+                    {{#if reconciliacao.ultimaExecucao}}{{dataHora reconciliacao.ultimaExecucao}}{{else}}aguardando{{/if}}
+                  </dd>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <dt class="text-slate-500">Próxima verificação</dt>
+                  <dd class="font-medium text-slate-200">
+                    {{#if reconciliacao.rodando}}em andamento{{else}}{{#if reconciliacao.proximaExecucao}}{{dataHora reconciliacao.proximaExecucao}}{{else}}—{{/if}}{{/if}}
+                  </dd>
+                </div>
+                {{#if reconciliacao.ultimoResultado}}
+                  <div class="flex items-center justify-between gap-3">
+                    <dt class="text-slate-500">Resultado da última rodada</dt>
+                    <dd class="text-right font-medium text-slate-200">
+                      {{reconciliacao.ultimoResultado.verificados}} verificado(s) ·
+                      {{reconciliacao.ultimoResultado.aprovados}} aprovado(s) ·
+                      {{reconciliacao.ultimoResultado.emailsEnviados}} e-mail(s)
+                    </dd>
+                  </div>
+                {{/if}}
+                <div class="flex items-center justify-between gap-3">
+                  <dt class="text-slate-500">Pedidos aguardando confirmação</dt>
+                  <dd class="font-medium {{#if pendentes_verificacao}}text-amber-300{{else}}text-slate-200{{/if}}">{{pendentes_verificacao}}</dd>
+                </div>
+              </dl>
+
+              <form method="POST" action="/painel/verificar-pendentes" class="mt-4">
+                <button type="submit" class="{{#if pendentes_verificacao}}btn-primary{{else}}btn-ghost{{/if}} w-full">
+                  {{icone "refresh" class="w-4 h-4"}} Verificar pendentes agora
+                </button>
+              </form>
             </div>
           </div>
         </div>

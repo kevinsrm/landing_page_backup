@@ -8,6 +8,8 @@
  *   - criação do pagamento Pix (QR Code + copia e cola)
  *   - aprovação do pagamento dispara o e-mail de download
  *   - webhook atualiza o pedido
+ *   - verificação automática (cliente fechou o navegador antes do webhook)
+ *   - "já paguei" (consulta sob demanda) e recuperação de acesso
  *   - login + painel administrativo
  *   - salvar o link de download do e-mail
  *   - 404
@@ -56,6 +58,12 @@ const servidor = spawn(process.execPath, ["index.js"], {
     MP_MOCK: "true",
     MP_MOCK_APROVA_EM: "2",
     NODE_ENV: "test",
+    // A rotina automática é disparada explicitamente nos testes
+    // (POST /tarefas/reconciliar), então a rodada de boot fica longe.
+    RECONCILIACAO: "on",
+    RECONCILIACAO_PRIMEIRA_EXECUCAO_SEGUNDOS: "3600",
+    RECONCILIACAO_INTERVALO_MINUTOS: "60",
+    RECONCILIACAO_PAUSA_MS: "0",
   },
   stdio: ["ignore", "pipe", "pipe"],
 });
@@ -111,6 +119,70 @@ try {
     logs.includes("Pagamento aprovado! Seu download está disponível") && logs.includes("cliente@teste.com")
   );
 
+  console.log("\n[3b] Rede de segurança: cliente pagou e fechou o navegador");
+  const respostaSumiu = await fetch(`${BASE}/pagamento/pix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome: "Cliente Fechou a Aba", email: "fechou@teste.com", cpf: "063.660.653-81" }),
+  });
+  const pixSumiu = await respostaSumiu.json();
+  verificar("novo Pix criado", pixSumiu.ok === true);
+
+  const verificarSemPagar = await (
+    await fetch(`${BASE}/pagamento/verificar/${pixSumiu.pedido_id}`, { method: "POST" })
+  ).json();
+  verificar("já paguei: ainda não aprovado", verificarSemPagar.ok === true && verificarSemPagar.aprovado === false);
+
+  // Ninguém consultou o status (navegador fechado) — só a varredura automática.
+  await esperar(3000);
+  const semToken = await fetch(`${BASE}/tarefas/reconciliar`, { method: "POST" });
+  verificar("tarefa de reconciliação exige token", semToken.status === 401, `(status ${semToken.status})`);
+
+  const varredura = await (
+    await fetch(`${BASE}/tarefas/reconciliar?token=segredo-de-teste`, { method: "POST" })
+  ).json();
+  verificar("a varredura verifica os pendentes", varredura.verificados >= 1, JSON.stringify(varredura));
+  verificar("a varredura aprova o pedido que ficou pendente", varredura.aprovados >= 1);
+
+  const depoisSumiu = await (await fetch(`${BASE}/pagamento/status/${pixSumiu.pedido_id}`)).json();
+  verificar("pedido aprovado mesmo sem webhook e sem navegador", depoisSumiu.aprovado === true);
+  verificar("e-mail de download saiu na varredura", varredura.emailsEnviados >= 1);
+
+  console.log("\n[3c] Recuperação de acesso pelo cliente");
+  const paginaRecuperar = await fetch(`${BASE}/recuperar`);
+  const htmlRecuperar = await paginaRecuperar.text();
+  verificar("GET /recuperar responde 200", paginaRecuperar.status === 200, `(status ${paginaRecuperar.status})`);
+  verificar("tem o formulário de recuperação", htmlRecuperar.includes("Recuperar e reenviar o link"));
+
+  const recuperarInvalido = await fetch(`${BASE}/recuperar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "email=nao-existe@teste.com&cpf=111.111.111-11",
+    redirect: "manual",
+  });
+  verificar(
+    "dados sem compra aprovada voltam com alerta",
+    recuperarInvalido.status === 302 && (recuperarInvalido.headers.get("location") || "").includes("alerta="),
+    recuperarInvalido.headers.get("location") || ""
+  );
+
+  const recuperarOk = await fetch(`${BASE}/recuperar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ email: "kevinsthepan8@gmail.com", cpf: "063.660.653-81" }).toString(),
+    redirect: "manual",
+  });
+  verificar(
+    "compra aprovada com e-mail + CPF corretos é atendida",
+    recuperarOk.status === 302 && (recuperarOk.headers.get("location") || "").startsWith("/recuperar?"),
+    recuperarOk.headers.get("location") || ""
+  );
+
+  verificar(
+    "a landing page oferece a recuperação de acesso",
+    homeHtml.includes("/recuperar")
+  );
+
   console.log("\n[4] Painel administrativo");
   const cookie = await (async () => {
     const resposta = await fetch(`${BASE}/loginuser`, {
@@ -128,6 +200,8 @@ try {
   verificar("GET /dash responde 200", dash.status === 200, `(status ${dash.status})`);
   verificar("mostra a visão geral", dashHtml.includes("Visão geral"));
   verificar("mostra a seção de link de download", dashHtml.includes("Link de download do e-mail"));
+  verificar("mostra a rede de segurança do Pix", dashHtml.includes("Rede de segurança do Pix"));
+  verificar("tem o botão de verificar pendentes", dashHtml.includes("Verificar pendentes agora"));
   verificar("lista as vendas", dashHtml.includes("Kevin Sthepan") || dashHtml.includes("Aprovadas"));
 
   const salvarLink = await fetch(`${BASE}/painel/link-download`, {
@@ -144,6 +218,17 @@ try {
 
   const dashComLink = await (await fetch(`${BASE}/dash`, { headers: { cookie } })).text();
   verificar("o link salvo aparece no painel", dashComLink.includes("TESTE-SMOKE"));
+
+  const verificarPendentes = await fetch(`${BASE}/painel/verificar-pendentes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", cookie },
+    redirect: "manual",
+  });
+  verificar(
+    "o painel dispara a verificação dos pendentes",
+    verificarPendentes.status === 302 && (verificarPendentes.headers.get("location") || "").includes("aviso="),
+    verificarPendentes.headers.get("location") || ""
+  );
 
   console.log("\n[4b] Nome do produto editável");
   const nomeNovo = "iPhone 17 Pro Max (Teste)";

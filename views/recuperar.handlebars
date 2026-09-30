@@ -1,0 +1,79 @@
+{{!-- ======================= NAV ======================= --}}
+<header class="sticky top-0 z-40 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+  <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+    <a href="/" class="flex items-center gap-2.5">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">{{icone "bolt" class="w-5 h-5"}}</span>
+      <span class="font-display text-lg font-bold tracking-tight text-white">{{nomeLoja}}</span>
+    </a>
+    <a href="/" class="btn-ghost px-4 py-2 text-sm">{{icone "arrow-left" class="w-4 h-4"}} Voltar</a>
+  </div>
+</header>
+
+<div class="relative mx-auto max-w-2xl px-4 py-14 sm:px-6">
+  <div class="pointer-events-none absolute -top-24 left-1/2 h-[320px] w-[560px] -translate-x-1/2 rounded-full bg-pix-500/20 blur-[110px]"></div>
+
+  <div class="relative text-center">
+    <span class="eyebrow">{{icone "download" class="w-3.5 h-3.5"}} Recuperar acesso</span>
+    <h1 class="section-title mt-4">Já pagou e não recebeu o e-mail?</h1>
+    <p class="mt-3 text-slate-400">
+      Informe o e-mail e o CPF usados na compra. Consultamos o seu pagamento no Mercado Pago e
+      reenviamos o link de download na hora.
+    </p>
+  </div>
+
+  {{#if aviso}}
+    <div class="relative mt-8 flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+      {{icone "check-circle" class="mt-0.5 w-5 h-5 shrink-0"}}
+      <p>{{aviso}}</p>
+    </div>
+  {{/if}}
+  {{#if alerta}}
+    <div class="relative mt-8 flex items-start gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+      {{icone "alert" class="mt-0.5 w-5 h-5 shrink-0"}}
+      <p>{{alerta}}</p>
+    </div>
+  {{/if}}
+
+  <div class="relative mt-8 card p-6 sm:p-8">
+    <form method="POST" action="/recuperar" class="space-y-5">
+      <div>
+        <label class="label" for="email">E-mail usado na compra</label>
+        <input id="email" name="email" type="email" autocomplete="email" required class="field" placeholder="voce@email.com">
+      </div>
+
+      <div>
+        <label class="label" for="cpf">CPF do titular</label>
+        <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" required class="field" placeholder="000.000.000-00">
+      </div>
+
+      <button type="submit" class="btn-pix btn-lg w-full">
+        {{icone "refresh" class="w-5 h-5"}} Recuperar e reenviar o link
+      </button>
+    </form>
+
+    <p class="mt-5 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
+      {{icone "lock" class="mt-0.5 w-3.5 h-3.5 shrink-0"}}
+      <span>
+        Por segurança, só reenviamos o link de compras <strong class="text-slate-300">aprovadas</strong> cujo e-mail e CPF
+        conferem com o pedido. O acesso continua sendo enviado apenas para o e-mail cadastrado na compra.
+      </span>
+    </p>
+  </div>
+
+  <p class="relative mt-8 text-center text-sm text-slate-500">
+    O pagamento acabou de ser feito?
+    <a href="/#checkout" class="font-semibold text-brand-300 transition hover:text-brand-200">Acompanhe pela página de checkout</a>
+    — a confirmação costuma levar poucos segundos.
+  </p>
+</div>
+
+<script>
+  document.getElementById("cpf").addEventListener("input", (evento) => {
+    let valor = evento.target.value.replace(/\D/g, "").slice(0, 11);
+    valor = valor
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    evento.target.value = valor;
+  });
+</script>
