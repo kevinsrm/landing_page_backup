@@ -15,6 +15,7 @@
 import express from "express";
 import { engine } from "express-handlebars";
 import session from "express-session";
+import createMysqlStore from "express-mysql-session";
 import multer from "multer";
 import crypto from "crypto";
 import dotenv from "dotenv";
@@ -55,7 +56,32 @@ app.use(
     secret: process.env.SECRET || "troque-este-segredo",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 1000 * 60 * 60 * 4 },
+    rolling: true,
+    store: !db.DB_MOCK && db.pool
+      ? new (createMysqlStore(session))(
+          {
+            createDatabaseTable: true,
+            schema: {
+              tableName: "sessoes",
+              columnNames: {
+                session_id: "session_id",
+                expires: "expires",
+                data: "data",
+              },
+            },
+            expiration: 1000 * 60 * 60 * 24 * 30,
+            checkExpirationInterval: 1000 * 60 * 15,
+          },
+          db.pool
+        )
+      : undefined,
+    cookie: {
+      secure: false,
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
+    },
   })
 );
 
@@ -443,9 +469,10 @@ app.post(
   requireAdmin,
   upload.array("imagens", 4),
   async (req, res) => {
-    const { preco_sem_desconto, preco, descricao, link_download, id = 1 } = req.body || {};
+    const { nome, preco_sem_desconto, preco, descricao, link_download, id = 1 } = req.body || {};
     try {
       await db.atualizarHome({
+        nome: nome ?? null,
         precoSemDesconto: preco_sem_desconto ?? null,
         preco: preco ?? null,
         descricao: descricao ?? null,
