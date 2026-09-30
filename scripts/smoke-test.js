@@ -145,6 +145,51 @@ try {
   const dashComLink = await (await fetch(`${BASE}/dash`, { headers: { cookie } })).text();
   verificar("o link salvo aparece no painel", dashComLink.includes("TESTE-SMOKE"));
 
+  console.log("\n[4b] Nome do produto editável");
+  const nomeNovo = "iPhone 17 Pro Max (Teste)";
+  const salvarProduto = await fetch(`${BASE}/validateupload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", cookie },
+    body: new URLSearchParams({
+      id: "1",
+      nome: nomeNovo,
+      preco_sem_desconto: "297,00",
+      preco: "97,00",
+      descricao: "Descrição de teste",
+    }).toString(),
+    redirect: "manual",
+  });
+  verificar(
+    "salvar produto com nome retorna 302",
+    salvarProduto.status === 302,
+    `(status ${salvarProduto.status})`
+  );
+
+  const homeComNome = await (await fetch(`${BASE}/`)).text();
+  verificar(
+    "nome do produto aparece na landing page",
+    homeComNome.includes(nomeNovo),
+    "(não achou o nome no HTML)"
+  );
+
+  const criarComNome = await fetch(`${BASE}/pagamento/pix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome: "Outro Cliente", email: "outro@teste.com", cpf: "063.660.653-81" }),
+  });
+  const pix2 = await criarComNome.json();
+  verificar("novo pagamento Pix criado após alterar produto", pix2.ok === true);
+
+  console.log("\n[4c] Sessão persistente (cookie volta a funcionar)");
+  const dashSemCookie = await fetch(`${BASE}/dash`, { redirect: "manual" });
+  verificar("sem cookie redireciona para /login", dashSemCookie.status === 302 && (dashSemCookie.headers.get("location") || "").includes("/login"));
+  const dashNovamente = await fetch(`${BASE}/dash`, { headers: { cookie }, redirect: "manual" });
+  verificar(
+    "com o cookie da sessão de login continua acessando /dash (sessão persistente)",
+    dashNovamente.status === 200,
+    `(status ${dashNovamente.status})`
+  );
+
   console.log("\n[5] Rotas de apoio");
   for (const rota of ["/login", "/suporte", "/suporte/reembolso", "/success", "/pending", "/fail"]) {
     const resposta = await fetch(`${BASE}${rota}`);
