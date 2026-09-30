@@ -25,6 +25,12 @@ O QUE MUDOU NESTA VERSÃO
    valor_total, reembolsos). O servidor aplica sozinho na inicialização,
    mas você também pode rodar o SQL manualmente (veja abaixo).
 
+6. ENTREGA GARANTIDA: o servidor agora verifica SOZINHO os pagamentos
+   pendentes a cada poucos minutos (lib/reconciliacao.js), uma página
+   /recuperar permite o próprio cliente reenviar o acesso e o checkout
+   retoma um Pix em aberto quando o navegador é reaberto.
+   Detalhes na seção "ENTREGA GARANTIDA" mais abaixo.
+
 
 COMO RODAR
 --------------------------------------------------------------
@@ -38,6 +44,11 @@ COMO RODAR
      SECRET              -> segredo da sessão
      SITE_URL            -> URL pública HTTPS do site (para o webhook)
      DOWNLOAD_LINK       -> link padrão de download (fallback do banco)
+
+   Opcionais (recomendados):
+     MP_WEBHOOK_SECRET   -> chave secreta da aplicação (valida o webhook)
+     CRON_SECRET         -> token do cron externo que chama /tarefas/reconciliar
+     RECONCILIACAO*      -> ajustes da verificação automática (padrões servem)
 
 3) Banco de dados:
      - importe banco_de_dados_aqui/backup_tabelas.sql (se for um banco novo)
@@ -74,6 +85,55 @@ pode atrasar se o cliente fechar a página.
 2. Abra a sua aplicação -> Webhooks
 3. Em "Pagamentos" informe:  https://SEU-DOMINIO/webhook
 4. Salve. O SITE_URL do .env precisa ser o mesmo domínio (HTTPS).
+5. (Opcional) Copie a "chave secreta" da aplicação para MP_WEBHOOK_SECRET
+   no .env. Com ela o servidor valida a assinatura x-signature e recusa
+   notificações falsas. Sem ela, a validação fica desligada.
+
+ATENÇÃO ao plano gratuito do Render: a instância "dorme" após alguns
+minutos sem acesso e leva ~1 minuto para acordar. Como o Mercado Pago
+espera poucos segundos pela resposta do webhook, a notificação pode ser
+perdida. A verificação automática resolve isso, mas para o site responder
+rápido ao cliente vale manter a instância acordada:
+  - crie um cron gratuito (ex.: https://cron-job.org) chamando
+    https://SEU-DOMINIO/health a cada 10 minutos; e/ou
+  - use o mesmo cron para chamar, a cada 5 minutos,
+    https://SEU-DOMINIO/tarefas/reconciliar?token=SEU_CRON_SECRET
+    (POST ou GET). Configure CRON_SECRET no .env.
+
+
+ENTREGA GARANTIDA (verificação automática)
+--------------------------------------------------------------
+O problema que isso resolve: o cliente paga pelo app do banco, o
+navegador fecha (celular com pouca memória) e o webhook do Mercado Pago
+não chega — o pedido ficava "pendente" para sempre e o e-mail não saía.
+
+Agora o próprio servidor roda a cada RECONCILIACAO_INTERVALO_MINUTOS
+(padrão: 5 min):
+
+  1. pega os pedidos recentes que ainda estão pendentes (e também os
+     aprovados que ficaram sem e-mail enviado);
+  2. consulta cada um no Mercado Pago pela API;
+  3. atualiza o status no banco e dispara o e-mail com o link de
+     download quando aparece "approved".
+
+Também foi adicionado:
+
+  - Botão "Já fiz o pagamento — verificar agora" no checkout, que força a
+    consulta na hora (POST /pagamento/verificar/:pedidoId).
+  - Retomada do Pix: o pedido em aberto fica salvo no navegador e
+    reaparece com o mesmo QR Code se o cliente reabrir a página. Ao
+    voltar para a aba, o status é consultado imediatamente.
+  - Página pública /recuperar: o cliente informa e-mail + CPF e recebe o
+    link de download novamente, sem precisar falar com o suporte. Antes
+    de responder, o servidor também consulta o Mercado Pago.
+  - Painel (/dash -> Link de download -> "Rede de segurança do Pix"):
+    mostra a última/próxima verificação e tem o botão
+    "Verificar pendentes agora" (POST /painel/verificar-pendentes).
+  - Gatilho para cron externo: POST|GET /tarefas/reconciliar?token=...
+    (token = CRON_SECRET ou o SECRET da sessão).
+  - GET /health passou a mostrar o estado da verificação automática.
+
+Para desligar a rotina: RECONCILIACAO=off no .env.
 
 
 FLUXO DO PAGAMENTO
@@ -82,9 +142,12 @@ FLUXO DO PAGAMENTO
 2. POST /pagamento/pix cria o pagamento no Mercado Pago e devolve
    qr_code (copia e cola) + qr_code_base64 (imagem) + expiração.
 3. A página mostra o QR Code e consulta GET /pagamento/status/:pedidoId
-   a cada 4 segundos.
+   a cada 4 segundos (e na hora em que a aba volta a ficar visível).
 4. O Mercado Pago chama POST /webhook quando o status muda.
 5. Status "approved" (uma única vez) -> e-mail com o link de download.
+6. Se 3 e 4 falharem (cliente fechou tudo / webhook não chegou), a
+   verificação automática encontra o pagamento em poucos minutos e
+   envia o e-mail do mesmo jeito. O envio é idempotente: nunca duplica.
 
 
 PAINEL ADMIN
@@ -107,8 +170,13 @@ ROTAS
 --------------------------------------------------------------
 GET  /                          landing page
 POST /pagamento/pix             cria o pagamento Pix (QR + copia e cola)
-GET  /pagamento/status/:id      consulta o status do pagamento
+GET  /pagamento/status/:id      consulta o status do pagamento (polling)
+POST /pagamento/verificar/:id   "já paguei": consulta o MP na hora
 POST /webhook                   notificação do Mercado Pago
+GET  /recuperar                 página de recuperação de acesso
+POST /recuperar                 reenvia o link (e-mail + CPF do titular)
+POST /tarefas/reconciliar       verificação automática via cron (token)
+POST /painel/verificar-pendentes verifica agora os pendentes (admin)
 GET  /success /pending /fail    páginas de retorno
 GET  /login  POST /loginuser    autenticação do admin
 GET  /logout                    sair
@@ -130,6 +198,7 @@ ESTRUTURA
 index.js                 rotas e view engine
 lib/db.js                acesso ao banco (e modo demo em memória)
 lib/pagamentos.js        Mercado Pago: criação/consulta do Pix + aprovação
+lib/reconciliacao.js     verificação automática dos pagamentos pendentes
 lib/email.js             Mailgun + templates (download, cobrança, rastreio)
 lib/icones.js            ícones SVG usados nas views
 src/input.css            tema Tailwind (build -> public/css/app.css)
