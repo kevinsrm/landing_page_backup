@@ -24,6 +24,7 @@ import { engine } from "express-handlebars";
 import session from "express-session";
 import createMysqlStore from "express-mysql-session";
 import multer from "multer";
+import morgan from "morgan";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import { randomUUID } from "node:crypto";
@@ -67,6 +68,28 @@ app.set("trust proxy", 1);
 /* ------------------------------------------------------------------ */
 /* Middlewares                                                         */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Log das requisições HTTP (morgan): registra TODA requisição que chega,
+ * com o método, a URL, o código de status da resposta e o tempo de
+ * processamento. Fica antes dos demais middlewares para registrar também
+ * as requisições barradas (sessão/parse) e as respostas 404.
+ *
+ *   production -> "combined" (padrão Apache: IP, data, método, URL,
+ *                 status e user-agent — ideal para o log do Render)
+ *   test       -> "tiny" (compacto, para não poluir a saída do npm test)
+ *   demais     -> "dev" (uma linha colorida por requisição no terminal)
+ *
+ * Dá para forçar qualquer formato do morgan (ou um personalizado) com
+ * LOG_FORMATO no .env, ex.:
+ *   LOG_FORMATO=":method :url :status :response-time ms - :remote-addr"
+ */
+const formatoLog =
+  process.env.LOG_FORMATO ||
+  { production: "combined", test: "tiny" }[process.env.NODE_ENV] ||
+  "dev";
+
+app.use(morgan(formatoLog));
 
 app.use(
   session({
