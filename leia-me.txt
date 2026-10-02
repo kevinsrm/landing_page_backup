@@ -31,6 +31,10 @@ O QUE MUDOU NESTA VERSÃO
    retoma um Pix em aberto quando o navegador é reaberto.
    Detalhes na seção "ENTREGA GARANTIDA" mais abaixo.
 
+7. LOGS: todas as requisições HTTP passam pelo morgan e são registradas
+   no console/painel com o método, a URL, o código de status e o tempo
+   de resposta. Detalhes na seção "LOG DAS REQUISIÇÕES HTTP" mais abaixo.
+
 
 COMO RODAR
 --------------------------------------------------------------
@@ -191,6 +195,24 @@ POST /reembolsauser             cliente solicita reembolso
 POST /refund                    estorna o pagamento no Mercado Pago
 GET  /suporte  /suporte/reembolso
 GET  /health                    healthcheck
+
+
+LOG DAS REQUISIÇÕES HTTP (morgan)
+--------------------------------------------------------------
+Toda requisição recebida pelo servidor é registrada no console (e no
+painel de logs do Render, em produção) com o método, a URL, o CÓDIGO DE
+STATUS da resposta e o tempo de processamento. Serve para acompanhar
+erros 4xx/5xx, lentidão e as chamadas do webhook do Mercado Pago.
+
+O formato se adapta ao ambiente:
+  produção (NODE_ENV=production) -> "combined" (padrão Apache, com IP e
+                                    user-agent, pronto para o log do Render)
+  npm test                       -> "tiny"    (compacto)
+  local (npm start / npm run dev)-> "dev"     (uma linha colorida por acesso)
+
+Para escolher outro formato, defina LOG_FORMATO no .env — aceita os
+formatos do morgan (tiny, short, common, combined) ou um personalizado,
+ex.: LOG_FORMATO=":method :url :status :response-time ms - :remote-addr".
 
 
 ESTRUTURA
