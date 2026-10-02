@@ -4,7 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#020617">
-  <title>{{#if titulo}}{{titulo}} · {{nomeLoja}}{{else}}{{nomeLoja}}{{/if}}</title>
+  <title>{{#if seo}}{{titulo}} | Painel SMM Profissional{{else}}{{#if titulo}}{{titulo}} · {{nomeLoja}}{{else}}{{nomeLoja}}{{/if}}{{/if}}</title>
+  {{#if seo}}
+  <meta name="description" content="{{metaDescription}}">
+  <meta name="keywords" content="{{metaKeywords}}">
+  <meta name="author" content="{{nomeLoja}}">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="{{canonicalUrl}}">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="product">
+  <meta property="og:site_name" content="{{nomeLoja}}">
+  <meta property="og:title" content="{{titulo}} | Painel SMM Profissional">
+  <meta property="og:description" content="{{metaDescription}}">
+  <meta property="og:url" content="{{canonicalUrl}}">
+  <meta property="og:image" content="{{ogImage}}">
+  <meta property="og:image:alt" content="{{titulo}} — painel SMM profissional">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{titulo}} | Painel SMM Profissional">
+  <meta name="twitter:description" content="{{metaDescription}}">
+  <meta name="twitter:image" content="{{ogImage}}">
+  <script type="application/ld+json">{{{schemaJson}}}</script>
+  {{else}}
+  <meta name="robots" content="noindex, follow">
+  {{/if}}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">

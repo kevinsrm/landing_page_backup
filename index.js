@@ -58,6 +58,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 const NOME_LOJA = process.env.NOME_LOJA || "kevinsrm.shop";
+const SITE_URL = (process.env.SITE_URL || "https://kevinsrm.shop").replace(/\/$/, "");
 
 // Atrás do proxy do Render: sem isso o req.ip seria sempre o do proxy,
 // e os limitadores de tentativas (checkout/recuperação) ficariam globais.
@@ -107,6 +108,19 @@ app.use(express.static("public"));
  * Healthcheck. Também serve como "keep-alive": um cron externo batendo
  * aqui a cada 10 min evita que a instância do Render (plano free) durma.
  */
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /dash\nDisallow: /login\nDisallow: /pagamento/\nDisallow: /tarefas/\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  const hoje = new Date().toISOString().slice(0, 10);
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${SITE_URL}/</loc><lastmod>${hoje}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>${SITE_URL}/suporte</loc><lastmod>${hoje}</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+</urlset>`);
+});
+
 app.get("/health", (req, res) =>
   res.json({
     ok: true,
@@ -227,6 +241,35 @@ app.get("/", async (req, res, next) => {
       preco_antigo_formatado: precoAntigo ? formatarBRL(precoAntigo) : null,
       desconto,
       nomeLoja: NOME_LOJA,
+      seo: true,
+      metaDescription: "Painel SMM completo e profissional para gerenciar serviços de redes sociais. Script com entrega imediata, instalação documentada, pagamento Pix seguro e suporte especializado.",
+      metaKeywords: "painel SMM, painel SMM Brasil, comprar painel SMM, script painel SMM, painel de mídia social, revenda de seguidores, serviços SMM, painel para Instagram, painel para TikTok, painel para YouTube, marketing de redes sociais, social media marketing, painel SMM profissional",
+      canonicalUrl: `${SITE_URL}/`,
+      ogImage: imagens?.caminho1 ? `${SITE_URL}/uploads/${imagens.caminho1}` : `${SITE_URL}/images/bgmobile.png`,
+      schemaJson: JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Product",
+            "@id": `${SITE_URL}/#produto`,
+            name: home?.nome || "Painel SMM profissional",
+            description: home?.descricao || "Painel SMM completo para gerenciamento de serviços de redes sociais.",
+            image: imagens?.caminho1 ? `${SITE_URL}/uploads/${imagens.caminho1}` : undefined,
+            brand: { "@type": "Brand", name: NOME_LOJA },
+            offers: { "@type": "Offer", url: `${SITE_URL}/`, priceCurrency: "BRL", price: Number(preco || 0).toFixed(2), availability: "https://schema.org/InStock" }
+          },
+          {
+            "@type": "FAQPage",
+            "@id": `${SITE_URL}/#faq`,
+            mainEntity: [
+              { "@type": "Question", name: "O que é um painel SMM?", acceptedAnswer: { "@type": "Answer", text: "Um painel SMM é uma plataforma para organizar e gerenciar serviços de marketing em redes sociais em um único ambiente." } },
+              { "@type": "Question", name: "Como recebo o painel SMM?", acceptedAnswer: { "@type": "Answer", text: "Após a confirmação do pagamento via Pix, o acesso para download é enviado automaticamente ao e-mail informado na compra." } },
+              { "@type": "Question", name: "O painel SMM possui suporte?", acceptedAnswer: { "@type": "Answer", text: "Sim. O pacote inclui documentação de instalação e atendimento para dúvidas." } }
+            ]
+          },
+          { "@type": "Organization", "@id": `${SITE_URL}/#organizacao`, name: NOME_LOJA, url: SITE_URL }
+        ]
+      })
     });
   } catch (err) {
     console.error("[/] erro ao carregar a home:", err.message);

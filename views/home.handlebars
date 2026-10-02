@@ -11,6 +11,7 @@
     <nav class="hidden items-center gap-8 text-sm font-medium text-slate-300 lg:flex">
       <a class="transition hover:text-white" href="#produto">Produto</a>
       <a class="transition hover:text-white" href="#beneficios">Benefícios</a>
+      <a class="transition hover:text-white" href="#sobre-painel-smm">Sobre o painel SMM</a>
       <a class="transition hover:text-white" href="#depoimentos">Depoimentos</a>
       <a class="transition hover:text-white" href="/suporte">Suporte</a>
     </nav>
@@ -38,9 +39,13 @@
         {{produto.nome}}
       </h1>
 
-      <p class="mt-5 max-w-xl whitespace-pre-line text-base leading-relaxed text-slate-400 sm:text-lg">
-        {{resumo produto.descricao 320}}
-      </p>
+      <div class="mt-5 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">
+        <p id="descricao-resumida" class="whitespace-pre-line">{{resumo produto.descricao 320}}</p>
+        <p id="descricao-completa" class="hidden whitespace-pre-line">{{produto.descricao}}</p>
+        <button id="alternar-descricao" type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-300 transition hover:text-brand-200" aria-expanded="false" aria-controls="descricao-completa">
+          <span>Ver descrição completa</span><span aria-hidden="true">↓</span>
+        </button>
+      </div>
 
       <div class="mt-8 flex flex-wrap items-end gap-x-4 gap-y-2">
         {{#if preco_antigo_formatado}}
@@ -129,6 +134,35 @@
         <p class="mt-2 text-sm leading-relaxed text-slate-400">Dúvida na instalação? Responda o e-mail de compra e nossa equipe ajuda você.</p>
       </div>
     </div>
+  </div>
+</section>
+
+{{!-- ============================ GUIA PAINEL SMM / SEO ============================ --}}
+<section id="sobre-painel-smm" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-20">
+  <div class="grid gap-10 lg:grid-cols-[1.15fr_.85fr] lg:items-start">
+    <article>
+      <span class="eyebrow">Painel SMM profissional</span>
+      <h2 class="section-title mt-4">Tenha seu próprio painel de marketing para redes sociais</h2>
+      <p class="mt-5 leading-relaxed text-slate-400">Um <strong class="text-slate-200">painel SMM</strong> (Social Media Marketing) reúne em um só ambiente os recursos necessários para organizar serviços voltados a redes sociais. Esta solução foi criada para quem deseja iniciar ou profissionalizar uma operação digital com uma plataforma prática, documentação clara e estrutura preparada para gestão.</p>
+      <p class="mt-4 leading-relaxed text-slate-400">O script de painel SMM ajuda a centralizar sua rotina e oferece uma base para trabalhar com serviços para Instagram, TikTok, YouTube e outras plataformas. Você recebe o pacote digital por e-mail após a aprovação do Pix, além de guia de instalação e acesso ao suporte para tirar dúvidas.</p>
+      <h3 class="mt-8 font-display text-2xl font-bold text-white">Por que escolher este script de painel SMM?</h3>
+      <ul class="mt-4 grid gap-3 text-slate-400 sm:grid-cols-2">
+        <li class="card p-4"><strong class="block text-white">Entrega automática</strong>Download liberado por e-mail após a confirmação.</li>
+        <li class="card p-4"><strong class="block text-white">Instalação documentada</strong>Orientações para configurar a plataforma.</li>
+        <li class="card p-4"><strong class="block text-white">Compra segura</strong>Pagamento via Pix processado pelo Mercado Pago.</li>
+        <li class="card p-4"><strong class="block text-white">Suporte especializado</strong>Ajuda para dúvidas relacionadas à instalação.</li>
+      </ul>
+    </article>
+    <aside id="faq" class="card p-6 sm:p-8" aria-labelledby="faq-titulo">
+      <span class="eyebrow">Dúvidas frequentes</span>
+      <h2 id="faq-titulo" class="mt-4 font-display text-2xl font-bold text-white">Perguntas sobre painel SMM</h2>
+      <div class="mt-6 divide-y divide-white/10">
+        <details class="py-4" open><summary class="cursor-pointer font-semibold text-white">O que é um painel SMM?</summary><p class="mt-2 text-sm leading-relaxed text-slate-400">É uma plataforma usada para organizar e gerenciar serviços de marketing em redes sociais em um único ambiente.</p></details>
+        <details class="py-4"><summary class="cursor-pointer font-semibold text-white">Como recebo o painel?</summary><p class="mt-2 text-sm leading-relaxed text-slate-400">Após a confirmação do Pix, o link para download é enviado automaticamente ao e-mail informado na compra.</p></details>
+        <details class="py-4"><summary class="cursor-pointer font-semibold text-white">Existe documentação de instalação?</summary><p class="mt-2 text-sm leading-relaxed text-slate-400">Sim. O pacote acompanha um guia com as orientações necessárias para a instalação.</p></details>
+        <details class="py-4"><summary class="cursor-pointer font-semibold text-white">A compra possui garantia?</summary><p class="mt-2 text-sm leading-relaxed text-slate-400">A compra conta com garantia de 7 dias, conforme as condições informadas no site.</p></details>
+      </div>
+    </aside>
   </div>
 </section>
 
@@ -393,6 +427,20 @@
 <script>
 (() => {
   const $ = (sel) => document.querySelector(sel);
+
+  const botaoDescricao = $("#alternar-descricao");
+  if (botaoDescricao) {
+    botaoDescricao.addEventListener("click", () => {
+      const resumo = $("#descricao-resumida");
+      const completa = $("#descricao-completa");
+      const expandida = botaoDescricao.getAttribute("aria-expanded") === "true";
+      resumo.classList.toggle("hidden", !expandida);
+      completa.classList.toggle("hidden", expandida);
+      botaoDescricao.setAttribute("aria-expanded", String(!expandida));
+      botaoDescricao.querySelector("span:first-child").textContent = expandida ? "Ver descrição completa" : "Mostrar menos";
+      botaoDescricao.querySelector("span:last-child").textContent = expandida ? "↓" : "↑";
+    });
+  }
 
   /* ---------- Galeria ---------- */
   const imgPrincipal = $("#img-principal");
