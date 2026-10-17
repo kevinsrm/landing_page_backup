@@ -59,6 +59,8 @@ COMO RODAR
      - rode a migração:
        mysql -u USUARIO -p NOME_DO_BANCO < banco_de_dados_aqui/migracoes/001_pix_transparente_e_link_download.sql
        (o servidor também aplica essas alterações automaticamente)
+     - a atualização do link padrão de download usa a migração 002; o servidor
+       também a aplica automaticamente e preserva links personalizados salvos no painel.
 
 4) CSS (só é necessário se você editar o visual):
      npm run dev:css     -> recompila o Tailwind ao salvar

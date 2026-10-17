@@ -76,8 +76,11 @@
       <div class="card relative overflow-hidden p-3">
         <div class="relative aspect-square overflow-hidden rounded-xl bg-slate-900">
           {{#if imagem.caminho1}}
-            <img id="img-principal" src="/uploads/{{imagem.caminho1}}" alt="{{produto.nome}}"
-                 class="h-full w-full object-cover transition duration-500">
+            <button id="abrir-imagem" type="button" aria-label="Ampliar imagem do produto"
+                    class="absolute inset-0 z-10 h-full w-full cursor-zoom-in border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400">
+              <img id="img-principal" src="/uploads/{{imagem.caminho1}}" alt="{{produto.nome}}"
+                   class="block h-full w-full object-cover transition duration-500">
+            </button>
           {{else}}
             <div class="grid h-full w-full place-items-center text-slate-600">
               {{icone "image" class="w-16 h-16"}}
@@ -100,6 +103,14 @@
     </div>
   </div>
 </section>
+
+<dialog id="imagem-dialog" class="product-image-dialog" aria-label="Imagem ampliada do produto">
+  <button id="fechar-imagem" type="button" aria-label="Fechar imagem ampliada"
+          class="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-slate-900/90 text-white shadow-xl transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
+    {{icone "x" class="w-5 h-5"}}
+  </button>
+  <img id="imagem-ampliada" alt="">
+</dialog>
 
 {{!-- ============================ BENEFÍCIOS ============================ --}}
 <section id="beneficios" class="border-y border-white/5 bg-slate-900/40">
@@ -454,6 +465,32 @@
       }, 160);
     });
   });
+
+  const botaoAbrirImagem = $("#abrir-imagem");
+  const dialogImagem = $("#imagem-dialog");
+  const imagemAmpliada = $("#imagem-ampliada");
+  const botaoFecharImagem = $("#fechar-imagem");
+  if (imgPrincipal && botaoAbrirImagem && dialogImagem && imagemAmpliada && botaoFecharImagem) {
+    botaoAbrirImagem.addEventListener("click", () => {
+      imagemAmpliada.src = imgPrincipal.currentSrc || imgPrincipal.src;
+      imagemAmpliada.alt = imgPrincipal.alt;
+      dialogImagem.showModal();
+      botaoFecharImagem.focus();
+    });
+
+    botaoFecharImagem.addEventListener("click", () => dialogImagem.close());
+
+    // No dialog modal, o clique no backdrop tem o próprio dialog como alvo.
+    dialogImagem.addEventListener("click", (evento) => {
+      if (evento.target === dialogImagem) dialogImagem.close();
+    });
+
+    dialogImagem.addEventListener("close", () => {
+      imagemAmpliada.removeAttribute("src");
+      imagemAmpliada.alt = "";
+      botaoAbrirImagem.focus();
+    });
+  }
 
   /* ---------- Toast ---------- */
   function toast(mensagem, tipo = "info") {
