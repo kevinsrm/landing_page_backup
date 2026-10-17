@@ -165,3 +165,32 @@
     @apply animate-shimmer rounded-lg;
   }
 }
+
+@layer components {
+  .product-image-dialog {
+    width: fit-content;
+    max-width: 96vw;
+    max-height: 96vh;
+    max-height: 96dvh;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .product-image-dialog::backdrop {
+    background-color: rgb(2 6 23 / 90%);
+    backdrop-filter: blur(6px);
+  }
+
+  .product-image-dialog > img {
+    display: block;
+    max-width: 92vw;
+    max-height: 90vh;
+    max-height: 90dvh;
+    border-radius: 1rem;
+    object-fit: contain;
+    box-shadow: 0 24px 80px rgb(0 0 0 / 60%);
+  }
+}

@@ -18,6 +18,11 @@
  * ------------------------------------------------------------------ */
 import { spawn } from "node:child_process";
 
+process.env.DB_MOCK = "true";
+const { getLinkDownload, templateDownload } = await import("../lib/email.js");
+
+const LINK_DOWNLOAD_NOVO =
+  "https://drive.google.com/file/d/1aGqAKricXabwJk99y1BqO3eviPa26zu0/view?usp=drivesdk";
 const PORTA = process.env.PORT_TESTE || 3999;
 const BASE = `http://127.0.0.1:${PORTA}`;
 
@@ -85,6 +90,19 @@ try {
   verificar("usa o CSS do Tailwind", homeHtml.includes("/css/app.css"));
   verificar("não usa Materialize", !homeHtml.includes("materialize"));
   verificar("tem o checkout Pix", homeHtml.includes("Gerar QR Code Pix"));
+  verificar(
+    "imagem principal abre o visualizador ampliado",
+    homeHtml.includes('id="abrir-imagem"') && homeHtml.includes('id="imagem-dialog"')
+  );
+
+  const linkDownloadPadrao = await getLinkDownload();
+  const emailDownloadHtml = templateDownload({
+    nome: "Cliente Teste",
+    pedidoId: "pedido-smoke",
+    link: linkDownloadPadrao,
+  });
+  verificar("link padrão de download foi atualizado", linkDownloadPadrao === LINK_DOWNLOAD_NOVO);
+  verificar("template do e-mail usa o novo link", emailDownloadHtml.includes(`href="${LINK_DOWNLOAD_NOVO}"`));
 
   console.log("\n[2] Checkout transparente Pix");
   const respostaPix = await fetch(`${BASE}/pagamento/pix`, {
