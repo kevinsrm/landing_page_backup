@@ -41,6 +41,7 @@ import {
   parsePreco,
   reenviarEmailDownload,
   sincronizarPedido,
+  tokenMercadoPago,
 } from "./lib/pagamentos.js";
 import { icone } from "./lib/icones.js";
 import {
@@ -280,8 +281,8 @@ function viewModelPedido(pedido) {
 /** true quando existe um ACCESS_TOKEN plausível configurado. */
 function pixConfigurado() {
   if (MP_MOCK) return true;
-  const token = (process.env.ACCESS_TOKEN || "").trim();
-  return Boolean(token) && !/^APP_USR-x+$/i.test(token) && !/^(TEST|APP_USR)-x/i.test(token);
+  const token = tokenMercadoPago();
+  return Boolean(token) && !/x{6,}/i.test(token);
 }
 
 function requireAdmin(req, res, next) {
@@ -1086,8 +1087,8 @@ app.use((err, req, res, next) => {
 /** Avisa no log (Render) quando o checkout não tem como funcionar. */
 function verificarCredenciaisPagamento() {
   if (MP_MOCK) return;
-  const token = (process.env.ACCESS_TOKEN || "").trim();
-  if (!token || /^APP_USR-x+$/i.test(token) || token.startsWith("TEST-xxx")) {
+  const token = tokenMercadoPago();
+  if (!token || /x{6,}/i.test(token)) {
     console.warn(
       "[pix] ACCESS_TOKEN do Mercado Pago não configurado! Defina a variável ACCESS_TOKEN " +
         "no painel da hospedagem (Render -> Environment) com o token da sua aplicação " +
