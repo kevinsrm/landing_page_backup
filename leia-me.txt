@@ -175,7 +175,10 @@ Se aparecer essa mensagem, o navegador recebeu uma página HTML no lugar
 do JSON. As causas mais comuns e como conferir:
 
 1. ACCESS_TOKEN inválido/expirado (a mais comum). Abra
-   https://SEU-DOMINIO/health e veja "pix_configurado". Se estiver false,
+   https://SEU-DOMINIO/diagnostico — ele mostra, SEM criar pagamento, se o
+   Mercado Pago aceita a credencial (campo "mercado_pago"), se o banco
+   responde e quanto tempo cada chamada leva. Em /health há também
+   "pix_configurado". Se estiver false,
    o token não foi definido. Se estiver true e ainda falhar, veja o log do
    Render: o Mercado Pago responde "invalid access token" quando o token
    foi revogado (trocar a senha, recriar a aplicação, etc.).
