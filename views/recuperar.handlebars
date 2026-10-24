@@ -42,8 +42,9 @@
       </div>
 
       <div>
-        <label class="label" for="cpf">CPF do titular</label>
-        <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" required class="field" placeholder="000.000.000-00">
+        <label class="label" for="cpf">CPF do titular <span class="normal-case text-slate-600">(opcional)</span></label>
+        <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" class="field" placeholder="000.000.000-00">
+        <p class="mt-1.5 text-xs text-slate-500">Preencha apenas se você informou o CPF na compra.</p>
       </div>
 
       <button type="submit" class="btn-pix btn-lg w-full">
@@ -54,8 +55,9 @@
     <p class="mt-5 flex items-start gap-2 text-xs leading-relaxed text-slate-500">
       {{icone "lock" class="mt-0.5 w-3.5 h-3.5 shrink-0"}}
       <span>
-        Por segurança, só reenviamos o link de compras <strong class="text-slate-300">aprovadas</strong> cujo e-mail e CPF
-        conferem com o pedido. O acesso continua sendo enviado apenas para o e-mail cadastrado na compra.
+        Por segurança, só reenviamos o link de compras <strong class="text-slate-300">aprovadas</strong> — e, quando você
+        informa o CPF, ele também precisa conferir com o pedido. O acesso continua sendo enviado apenas para o
+        e-mail cadastrado na compra.
       </span>
     </p>
   </div>

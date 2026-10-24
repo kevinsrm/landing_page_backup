@@ -148,12 +148,42 @@ app.get("/health", (req, res) =>
   res.json({
     ok: true,
     demo: db.DB_MOCK || MP_MOCK,
+    // Ajuda a diagnosticar o checkout: se `pix_configurado` for false, o
+    // ACCESS_TOKEN do Mercado Pago está vazio/é o placeholder do .env.
+    pix_configurado: pixConfigurado(),
     verificado_em: new Date().toISOString(),
     reconciliacao: statusReconciliacao(),
   })
 );
+/**
+ * Rotas consumidas por `fetch()` no navegador: elas DEVEM sempre responder
+ * JSON. Se um erro escapar (corpo malformado, falha inesperada), o Express
+ * caía no tratador de erros que renderiza uma página HTML — o front então
+ * quebrava com "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON".
+ */
+function ehRotaDeApi(req) {
+  // Só as rotas que o navegador consome via fetch() e que esperam JSON.
+  // (/painel/*, /refund e /enviar-* são formulários do admin: usam redirect.)
+  return /^\/(pagamento|webhook|tarefas|reembolsauser)(\/|$)/.test(req.path);
+}
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+/**
+ * Erro ao ler o corpo da requisição (JSON inválido, corpo grande demais,
+ * codificação estranha): responde JSON nas rotas de API em vez de HTML.
+ */
+app.use((err, req, res, next) => {
+  if (!err) return next();
+  const status = Number(err.status || err.statusCode) || 400;
+  if (!ehRotaDeApi(req)) return next(err);
+  console.warn(`[${req.method} ${req.path}] corpo da requisição inválido:`, err.message);
+  return res.status(status).json({
+    ok: false,
+    erro: "Requisição inválida. Recarregue a página e tente novamente.",
+  });
+});
 
 app.use((req, res, next) => {
   res.locals.nomeLoja = NOME_LOJA;
@@ -240,6 +270,13 @@ function viewModelPedido(pedido) {
   );
 }
 
+/** true quando existe um ACCESS_TOKEN plausível configurado. */
+function pixConfigurado() {
+  if (MP_MOCK) return true;
+  const token = (process.env.ACCESS_TOKEN || "").trim();
+  return Boolean(token) && !/^APP_USR-x+$/i.test(token) && !/^(TEST|APP_USR)-x/i.test(token);
+}
+
 function requireAdmin(req, res, next) {
   if (!req.session.usuario) return res.redirect("/login");
   return next();
@@ -306,15 +343,17 @@ app.get("/", async (req, res, next) => {
 
 app.post("/pagamento/pix", async (req, res) => {
   const { nome, email, cpf, telefone } = req.body || {};
+  const cpfLimpo = apenasNumeros(cpf);
 
-  if (!nome || !email || !cpf) {
-    return res.status(400).json({ ok: false, erro: "Preencha nome, e-mail e CPF." });
+  if (!nome || !email) {
+    return res.status(400).json({ ok: false, erro: "Preencha seu nome e o seu e-mail." });
   }
   if (!emailValido(email)) {
     return res.status(400).json({ ok: false, erro: "Informe um e-mail válido — é por ele que você recebe o download." });
   }
-  if (apenasNumeros(cpf).length !== 11) {
-    return res.status(400).json({ ok: false, erro: "CPF inválido." });
+  // CPF é opcional: só conferimos quando o cliente resolve informar.
+  if (cpfLimpo && cpfLimpo.length !== 11) {
+    return res.status(400).json({ ok: false, erro: "O CPF deve ter 11 dígitos — ou deixe o campo em branco." });
   }
 
   try {
@@ -329,7 +368,8 @@ app.post("/pagamento/pix", async (req, res) => {
       id: pedidoId,
       nome: String(nome).trim(),
       email: String(email).trim().toLowerCase(),
-      cpf: String(cpf).trim(),
+      // A coluna `cpf` não aceita NULL em bancos antigos: guardamos "".
+      cpf: cpf ? String(cpf).trim() : "",
       telefone: telefone ? String(telefone).trim() : null,
       valor_total: valor,
     });
@@ -359,9 +399,12 @@ app.post("/pagamento/pix", async (req, res) => {
   } catch (err) {
     console.error("[/pagamento/pix] erro:", err.message);
     const desenvolvimento = process.env.NODE_ENV !== "production";
+    // `exporAoCliente` marca erros de configuração (ex.: ACCESS_TOKEN
+    // inválido) cuja mensagem ajuda o lojista a corrigir o problema.
+    const mostrarDetalhe = desenvolvimento || err.exporAoCliente;
     res.status(502).json({
       ok: false,
-      erro: desenvolvimento && err.message
+      erro: mostrarDetalhe && err.message
         ? err.message
         : "Não foi possível gerar o QR Code agora. Tente novamente em instantes.",
     });
@@ -547,10 +590,16 @@ app.get("/recuperar", (req, res) =>
 app.post("/recuperar", limitarRecuperacao, async (req, res) => {
   const email = String(req.body?.email || "").trim().toLowerCase();
   const cpf = String(req.body?.cpf || "").trim();
+  const cpfLimpo = apenasNumeros(cpf);
 
-  if (!emailValido(email) || apenasNumeros(cpf).length !== 11) {
+  if (!emailValido(email)) {
     return res.redirect(
-      `/recuperar?alerta=${encodeURIComponent("Informe o e-mail usado na compra e o CPF completo do titular.")}`
+      `/recuperar?alerta=${encodeURIComponent("Informe o e-mail usado na compra.")}`
+    );
+  }
+  if (cpfLimpo && cpfLimpo.length !== 11) {
+    return res.redirect(
+      `/recuperar?alerta=${encodeURIComponent("O CPF deve ter 11 dígitos — deixe o campo em branco se não informou na compra.")}`
     );
   }
 
@@ -568,14 +617,14 @@ app.post("/recuperar", limitarRecuperacao, async (req, res) => {
       }
     }
 
-    const aprovados = await db.buscarPedidosAprovados({ email, cpf, limite: 5 });
+    const aprovados = await db.buscarPedidosAprovados({ email, cpf: cpfLimpo || null, limite: 5 });
     if (!aprovados.length) {
       const pendentes = recentes.filter((pedido) => pedido.status_pagamento === "pending");
       return res.redirect(
         `/recuperar?alerta=${encodeURIComponent(
           pendentes.length
             ? "Encontramos um pedido seu, mas o pagamento ainda não está confirmado. Se você acabou de pagar, aguarde 1 minuto e tente novamente."
-            : "Não encontramos nenhuma compra aprovada com esse e-mail e CPF. Confira os dados ou fale com o suporte."
+            : `Não encontramos nenhuma compra aprovada com esse e-mail${cpfLimpo ? " e CPF" : ""}. Confira os dados ou fale com o suporte.`
         )}`
       );
     }
@@ -944,11 +993,29 @@ app.get("/bot", async (req, res) => {
 /* 404 / erros                                                         */
 /* ------------------------------------------------------------------ */
 
-app.use((req, res) => res.status(404).render("notfound", { titulo: "Página não encontrada", nomeLoja: NOME_LOJA }));
+app.use((req, res) => {
+  // Rotas de API nunca devolvem HTML: o front espera JSON.
+  if (ehRotaDeApi(req)) {
+    return res.status(404).json({ ok: false, erro: "Rota não encontrada." });
+  }
+  return res.status(404).render("notfound", { titulo: "Página não encontrada", nomeLoja: NOME_LOJA });
+});
 
 app.use((err, req, res, next) => {
   console.error("[erro]", err.message);
   if (res.headersSent) return next(err);
+
+  const status = Number(err.status || err.statusCode) || 500;
+
+  // Mesma regra: erro em rota de API responde JSON (e não uma página HTML,
+  // que fazia o navegador reclamar de "Unexpected token '<'").
+  if (ehRotaDeApi(req)) {
+    return res.status(status >= 400 && status < 600 ? status : 500).json({
+      ok: false,
+      erro: "Não foi possível concluir a operação agora. Tente novamente em instantes.",
+    });
+  }
+
   res.status(500).render("notfound", {
     titulo: "Erro interno",
     nomeLoja: NOME_LOJA,
@@ -962,7 +1029,22 @@ app.use((err, req, res, next) => {
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 
+/** Avisa no log (Render) quando o checkout não tem como funcionar. */
+function verificarCredenciaisPagamento() {
+  if (MP_MOCK) return;
+  const token = (process.env.ACCESS_TOKEN || "").trim();
+  if (!token || /^APP_USR-x+$/i.test(token) || token.startsWith("TEST-xxx")) {
+    console.warn(
+      "[pix] ACCESS_TOKEN do Mercado Pago não configurado! Defina a variável ACCESS_TOKEN " +
+        "no painel da hospedagem (Render -> Environment) com o token da sua aplicação " +
+        "(https://www.mercadopago.com.br/developers/panel/applications). Sem isso o " +
+        "botão \"Gerar QR Code Pix\" responde com erro."
+    );
+  }
+}
+
 async function iniciar() {
+  verificarCredenciaisPagamento();
   await db.testarConexao();
   await db.ensureSchema();
 

@@ -83,8 +83,18 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(corpo),
       });
-      const dados = await resposta.json();
-      if (!resposta.ok) throw new Error(dados.erro || "Não foi possível enviar a solicitação.");
+      // Se a hospedagem devolver uma página HTML (instância reiniciando),
+      // avisamos de forma amigável em vez de estourar um erro de JSON.
+      const tipo = (resposta.headers.get("content-type") || "").toLowerCase();
+      const dados = tipo.includes("json") ? await resposta.json() : null;
+      if (!resposta.ok || !dados) {
+        throw new Error(
+          dados?.erro ||
+            (tipo.includes("json")
+              ? "Não foi possível enviar a solicitação."
+              : `O servidor não respondeu como esperado (código ${resposta.status}). Tente novamente em instantes.`)
+        );
+      }
 
       retorno.className = "flex items-start gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200";
       retorno.textContent = "Solicitação recebida! Você receberá a resposta no e-mail informado.";
