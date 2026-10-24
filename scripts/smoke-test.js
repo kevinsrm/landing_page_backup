@@ -121,6 +121,45 @@ try {
     body: JSON.stringify({ nome: "X", email: "invalido", cpf: "1" }),
   });
   verificar("valida os dados do cliente", respostaInvalida.status === 400);
+  verificar(
+    "erro de validação volta em JSON",
+    (respostaInvalida.headers.get("content-type") || "").includes("json")
+  );
+
+  // CPF é opcional: o checkout precisa funcionar só com nome + e-mail.
+  const respostaSemCpf = await fetch(`${BASE}/pagamento/pix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome: "Cliente Sem CPF", email: "semcpf@teste.com" }),
+  });
+  const pixSemCpf = await respostaSemCpf.json();
+  verificar("gera o Pix sem CPF", pixSemCpf.ok === true, JSON.stringify(pixSemCpf));
+  verificar("retorna o copia e cola sem CPF", typeof pixSemCpf.qr_code === "string" && pixSemCpf.qr_code.length > 20);
+
+  const cpfIncompleto = await fetch(`${BASE}/pagamento/pix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome: "Cliente Teste", email: "cliente@teste.com", cpf: "123" }),
+  });
+  verificar("CPF preenchido pela metade é recusado", cpfIncompleto.status === 400);
+
+  // Regressão do "Unexpected token '<'": corpo malformado e rotas
+  // inexistentes de API também precisam responder JSON (nunca HTML).
+  const corpoQuebrado = await fetch(`${BASE}/pagamento/pix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{ isso não é json",
+  });
+  verificar(
+    "corpo JSON inválido responde JSON (não HTML)",
+    (corpoQuebrado.headers.get("content-type") || "").includes("json"),
+    corpoQuebrado.headers.get("content-type") || ""
+  );
+  const rotaInexistente = await fetch(`${BASE}/pagamento/rota-que-nao-existe`);
+  verificar(
+    "rota inexistente de /pagamento responde JSON",
+    (rotaInexistente.headers.get("content-type") || "").includes("json")
+  );
 
   console.log("\n[3] Aprovação + e-mail com o link de download");
   const antes = await (await fetch(`${BASE}/pagamento/status/${pix.pedido_id}`)).json();

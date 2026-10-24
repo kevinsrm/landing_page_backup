@@ -267,8 +267,8 @@
 
           <div class="grid gap-5 sm:grid-cols-2">
             <div>
-              <label class="label" for="cpf">CPF</label>
-              <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" class="field" required>
+              <label class="label" for="cpf">CPF <span class="normal-case text-slate-600">(opcional)</span></label>
+              <input id="cpf" name="cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" class="field">
             </div>
             <div>
               <label class="label" for="telefone">Telefone <span class="normal-case text-slate-600">(opcional)</span></label>
@@ -617,11 +617,76 @@
     consultarStatus(dados.pedido_id);
   }
 
+  /* ---------- Leitura segura das respostas do servidor ---------- */
+
+  /**
+   * Lê a resposta sem estourar quando ela não é JSON. Quando a hospedagem
+   * está reiniciando (ou um proxy assume a requisição), o servidor devolve
+   * uma página HTML de erro e o antigo `resposta.json()` quebrava com
+   * "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON".
+   */
+  async function lerResposta(resposta) {
+    const tipo = (resposta.headers.get("content-type") || "").toLowerCase();
+    const texto = await resposta.text();
+    if (tipo.includes("json")) {
+      try {
+        return { dados: JSON.parse(texto), html: false, status: resposta.status };
+      } catch {
+        return { dados: null, html: false, status: resposta.status, invalido: true };
+      }
+    }
+    return { dados: null, html: true, status: resposta.status };
+  }
+
+  /** Frase amigável para falhas de rede/servidor (nunca o erro técnico do JSON). */
+  function mensagemDeFalha(resultado) {
+    if (!resultado || resultado.status === 0) {
+      return "Sem conexão com o servidor. Verifique sua internet e tente novamente.";
+    }
+    if (resultado.html) {
+      return `O servidor devolveu uma página da web em vez dos dados do pedido (código ${resultado.status}). Isso costuma acontecer quando o site está reiniciando — aguarde alguns segundos e tente de novo.`;
+    }
+    if ([502, 503, 504].includes(resultado.status)) {
+      return `O servidor não respondeu a tempo (código ${resultado.status}). Aguarde alguns segundos e clique em "Gerar QR Code Pix" novamente.`;
+    }
+    return `O servidor respondeu de forma inesperada (código ${resultado.status}). Tente novamente em instantes.`;
+  }
+
+  /**
+   * POST em JSON com nova tentativa automática em 502/503/504 ou resposta
+   * HTML — justamente o cenário da instância "acordando" que gerava o erro.
+   */
+  async function postarJSON(url, corpo, { tentativas = 2, esperaMs = 1500 } = {}) {
+    let ultimo = null;
+    for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+      let resposta = null;
+      try {
+        resposta = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(corpo || {}),
+        });
+      } catch {
+        ultimo = { dados: null, html: false, status: 0 };
+      }
+      if (resposta) {
+        ultimo = await lerResposta(resposta);
+        const podeRepetir = ultimo.html || [502, 503, 504].includes(ultimo.status);
+        if (ultimo.dados || !podeRepetir) return ultimo;
+      }
+      if (tentativa < tentativas) await new Promise((r) => setTimeout(r, esperaMs));
+    }
+    return ultimo;
+  }
+
   async function checarStatus(rotulo = "polling") {
     if (!pedidoAtual?.pedido_id) return null;
     try {
-      const resposta = await fetch(`/pagamento/status/${pedidoAtual.pedido_id}`);
-      const dados = await resposta.json();
+      const resposta = await fetch(`/pagamento/status/${pedidoAtual.pedido_id}`, {
+        headers: { Accept: "application/json" },
+      });
+      const { dados } = await lerResposta(resposta);
+      if (!dados) return null;
       if (dados.status === "approved") {
         limparIntervalos();
         limparPedidoGuardado();
@@ -653,9 +718,14 @@
     const email = $("#email").value.trim();
     const cpf = $("#cpf").value.trim();
 
+    const cpfLimpo = cpf.replace(/\D/g, "");
+
     if (nome.length < 3) return mostrarErro("Informe seu nome completo.");
     if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) return mostrarErro("Informe um e-mail válido para receber o download.");
-    if (cpf.replace(/\D/g, "").length !== 11) return mostrarErro("Informe um CPF válido.");
+    // O CPF é opcional: só reclamamos quando o campo foi preenchido pela metade.
+    if (cpfLimpo && cpfLimpo.length !== 11) {
+      return mostrarErro("O CPF deve ter 11 dígitos — deixe o campo em branco se preferir não informar.");
+    }
 
     const botao = $("#btn-gerar-pix");
     const textoBotao = $("#btn-gerar-pix-texto");
@@ -663,14 +733,17 @@
     textoBotao.textContent = "Gerando QR Code…";
 
     try {
-      const resposta = await fetch("/pagamento/pix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, email, cpf, telefone: $("#telefone").value.trim() }),
+      const resultado = await postarJSON("/pagamento/pix", {
+        nome,
+        email,
+        cpf: cpfLimpo || undefined,
+        telefone: $("#telefone").value.trim(),
       });
-      const dados = await resposta.json();
+      const dados = resultado.dados;
 
-      if (!dados.ok) throw new Error(dados.erro || "Não foi possível gerar o QR Code.");
+      if (!dados?.ok) {
+        throw new Error(dados?.erro || mensagemDeFalha(resultado));
+      }
 
       guardarPedido({
         pedido_id: dados.pedido_id,
@@ -713,8 +786,12 @@
     texto.textContent = "Procurando seu pagamento…";
 
     try {
-      const resposta = await fetch(`/pagamento/verificar/${pedidoAtual.pedido_id}`, { method: "POST" });
-      const dados = await resposta.json();
+      const resultado = await postarJSON(`/pagamento/verificar/${pedidoAtual.pedido_id}`);
+      const dados = resultado.dados;
+      if (!dados) {
+        toast(mensagemDeFalha(resultado), "erro");
+        return;
+      }
       if (dados.aprovado) {
         limparIntervalos();
         limparPedidoGuardado();

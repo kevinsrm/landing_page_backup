@@ -86,7 +86,7 @@
                   <div>
                     <p class="label-light text-slate-500">Contato</p>
                     <p class="text-sm text-slate-200">{{this.telefone}}</p>
-                    <p class="text-sm text-slate-200">CPF {{this.cpf}}</p>
+                    {{#if this.cpf}}<p class="text-sm text-slate-200">CPF {{this.cpf}}</p>{{/if}}
                   </div>
                   <div>
                     <p class="label-light text-slate-500">Pagamento</p>

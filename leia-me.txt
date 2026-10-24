@@ -31,7 +31,20 @@ O QUE MUDOU NESTA VERSÃO
    retoma um Pix em aberto quando o navegador é reaberto.
    Detalhes na seção "ENTREGA GARANTIDA" mais abaixo.
 
-7. LOGS: todas as requisições HTTP passam pelo morgan e são registradas
+7. CHECKOUT SEM CPF: o CPF deixou de ser obrigatório (o Mercado Pago não
+   exige para PIX). O cliente compra só com nome + e-mail; se informar o
+   CPF, ele é validado e enviado ao Mercado Pago. A recuperação de acesso
+   (/recuperar) também passou a funcionar só com o e-mail.
+
+8. ERROS DO CHECKOUT: as rotas de API (/pagamento/*, /reembolsauser,
+   /webhook, etc.) agora SEMPRE respondem JSON — inclusive em erro de
+   corpo, 404 ou 500. Antes, uma falha inesperada devolvia a página HTML
+   de erro e o navegador exibia o famoso
+   "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON".
+   O front também lê a resposta com segurança e repete a requisição uma
+   vez quando a hospedagem responde 502/503/504 (instância acordando).
+
+9. LOGS: todas as requisições HTTP passam pelo morgan e são registradas
    no console/painel com o método, a URL, o código de status e o tempo
    de resposta. Detalhes na seção "LOG DAS REQUISIÇÕES HTTP" mais abaixo.
 
@@ -144,7 +157,7 @@ Para desligar a rotina: RECONCILIACAO=off no .env.
 
 FLUXO DO PAGAMENTO
 --------------------------------------------------------------
-1. O cliente preenche nome, e-mail e CPF na landing page.
+1. O cliente preenche nome e e-mail (CPF e telefone são opcionais).
 2. POST /pagamento/pix cria o pagamento no Mercado Pago e devolve
    qr_code (copia e cola) + qr_code_base64 (imagem) + expiração.
 3. A página mostra o QR Code e consulta GET /pagamento/status/:pedidoId
@@ -154,6 +167,34 @@ FLUXO DO PAGAMENTO
 6. Se 3 e 4 falharem (cliente fechou tudo / webhook não chegou), a
    verificação automática encontra o pagamento em poucos minutos e
    envia o e-mail do mesmo jeito. O envio é idempotente: nunca duplica.
+
+
+PROBLEMAS NO CHECKOUT (ERROS DO TIPO "Unexpected token '<'")
+--------------------------------------------------------------
+Se aparecer essa mensagem, o navegador recebeu uma página HTML no lugar
+do JSON. As causas mais comuns e como conferir:
+
+1. ACCESS_TOKEN inválido/expirado (a mais comum). Abra
+   https://SEU-DOMINIO/health e veja "pix_configurado". Se estiver false,
+   o token não foi definido. Se estiver true e ainda falhar, veja o log do
+   Render: o Mercado Pago responde "invalid access token" quando o token
+   foi revogado (trocar a senha, recriar a aplicação, etc.).
+   Correção: painel do Render -> Environment -> ACCESS_TOKEN = token atual
+   (https://www.mercadopago.com.br/developers/panel/applications) e
+   reinicie o serviço (Manual Deploy -> Restart).
+
+2. Instância do Render dormindo/reiniciando. No plano gratuito o serviço
+   "dorme" e o primeiro acesso leva ~1 minuto; nesse intervalo o proxy
+   devolve uma página HTML de erro. O checkout agora repete a requisição
+   automaticamente e mostra uma mensagem clara. Para evitar, use um cron
+   chamando /health a cada 10 minutos (veja a seção do webhook).
+
+3. Diferença entre a versão publicada e este código: confirme que o
+   deploy mais recente do repositório está no ar (Logs do Render devem
+   mostrar "servidor rodando na porta ...").
+
+Além disso, o servidor agora registra no log, ao subir, um aviso quando o
+ACCESS_TOKEN está ausente ou ainda é o placeholder do .env.
 
 
 PAINEL ADMIN
