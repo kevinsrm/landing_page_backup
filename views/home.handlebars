@@ -742,7 +742,12 @@
       const dados = resultado.dados;
 
       if (!dados?.ok) {
-        throw new Error(dados?.erro || mensagemDeFalha(resultado));
+        const mensagem = dados?.erro || mensagemDeFalha(resultado);
+        // Falha de credencial/configuração: reforça que não é culpa do cliente.
+        if (/ACCESS_TOKEN|indispon[íi]vel/i.test(mensagem)) {
+          throw new Error(`${mensagem} Nenhum valor foi cobrado — tente novamente mais tarde.`);
+        }
+        throw new Error(mensagem);
       }
 
       guardarPedido({
