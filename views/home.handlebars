@@ -647,7 +647,7 @@
       return `O servidor devolveu uma página da web em vez dos dados do pedido (código ${resultado.status}). Isso costuma acontecer quando o site está reiniciando — aguarde alguns segundos e tente de novo.`;
     }
     if ([502, 503, 504].includes(resultado.status)) {
-      return `O servidor não respondeu a tempo (código ${resultado.status}). Aguarde alguns segundos e clique em "Gerar QR Code Pix" novamente.`;
+      return `O servidor não respondeu a tempo (código ${resultado.status}). Isso normalmente acontece quando o site está iniciando ou reiniciando — aguarde cerca de 1 minuto e clique em "Gerar QR Code Pix" novamente.`;
     }
     return `O servidor respondeu de forma inesperada (código ${resultado.status}). Tente novamente em instantes.`;
   }
@@ -656,7 +656,7 @@
    * POST em JSON com nova tentativa automática em 502/503/504 ou resposta
    * HTML — justamente o cenário da instância "acordando" que gerava o erro.
    */
-  async function postarJSON(url, corpo, { tentativas = 2, esperaMs = 1500 } = {}) {
+  async function postarJSON(url, corpo, { tentativas = 3, esperaMs = 2500 } = {}) {
     let ultimo = null;
     for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
       let resposta = null;

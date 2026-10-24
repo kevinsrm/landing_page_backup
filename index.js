@@ -37,6 +37,7 @@ import {
   client,
   consultarPagamento,
   criarPagamentoPix,
+  diagnosticoPagamento,
   parsePreco,
   reenviarEmailDownload,
   sincronizarPedido,
@@ -144,9 +145,15 @@ app.get("/sitemap.xml", (req, res) => {
 </urlset>`);
 });
 
+/** Momento do boot do processo (mostra se a hospedagem está reiniciando). */
+const INICIADO_EM = new Date().toISOString();
+
 app.get("/health", (req, res) =>
   res.json({
     ok: true,
+    iniciado_em: INICIADO_EM,
+    uptime_segundos: Math.round(process.uptime()),
+    memoria_mb: Math.round(process.memoryUsage().rss / 1048576),
     demo: db.DB_MOCK || MP_MOCK,
     // Ajuda a diagnosticar o checkout: se `pix_configurado` for false, o
     // ACCESS_TOKEN do Mercado Pago está vazio/é o placeholder do .env.
@@ -363,6 +370,7 @@ app.post("/pagamento/pix", async (req, res) => {
       return res.status(500).json({ ok: false, erro: "Preço do produto não configurado no painel." });
     }
 
+    const t0 = Date.now();
     const pedidoId = randomUUID();
     await db.criarPedido({
       id: pedidoId,
@@ -374,6 +382,7 @@ app.post("/pagamento/pix", async (req, res) => {
       valor_total: valor,
     });
 
+    const inicioMp = Date.now();
     const pagamento = await criarPagamentoPix({
       pedidoId,
       email: String(email).trim().toLowerCase(),
@@ -385,6 +394,10 @@ app.post("/pagamento/pix", async (req, res) => {
     });
 
     await db.atualizarPagamento({ pedidoId, paymentId: pagamento.paymentId, status: "pending" });
+
+    console.log(
+      `[/pagamento/pix] ok — Mercado Pago em ${Date.now() - inicioMp}ms, total ${Date.now() - t0}ms`
+    );
 
     res.json({
       ok: true,
@@ -398,6 +411,7 @@ app.post("/pagamento/pix", async (req, res) => {
     });
   } catch (err) {
     console.error("[/pagamento/pix] erro:", err.message);
+    if (err.cause) console.error("[/pagamento/pix] causa:", err.cause?.message || err.cause);
     const desenvolvimento = process.env.NODE_ENV !== "production";
     // `exporAoCliente` marca erros de configuração (ex.: ACCESS_TOKEN
     // inválido) cuja mensagem ajuda o lojista a corrigir o problema.
@@ -546,6 +560,46 @@ function limitar({ janelaMs, maximo, chave = "" }) {
 
 const limitarVerificacao = limitar({ janelaMs: 60 * 1000, maximo: 10, chave: "verificar" });
 const limitarRecuperacao = limitar({ janelaMs: 15 * 60 * 1000, maximo: 4, chave: "recuperar" });
+const limitarDiagnostico = limitar({ janelaMs: 60 * 1000, maximo: 6, chave: "diagnostico" });
+
+/**
+ * GET /diagnostico — raio-x do checkout, SEM criar pagamento.
+ * Mostra se o banco responde, se a credencial do Mercado Pago é aceita e
+ * quanto tempo cada coisa demora. Serve para explicar erros de 502/timeout.
+ */
+app.get("/diagnostico", limitarDiagnostico, async (req, res) => {
+  const banco = { ok: null, ms: null, erro: null };
+  const t0 = Date.now();
+  try {
+    if (db.DB_MOCK) {
+      banco.ok = true;
+      banco.modo = "mock";
+    } else {
+      const inicio = Date.now();
+      await db.query("SELECT 1");
+      banco.ok = true;
+      banco.ms = Date.now() - inicio;
+    }
+  } catch (err) {
+    banco.ok = false;
+    banco.erro = err.message;
+  }
+
+  const pagamento = await diagnosticoPagamento();
+
+  res.json({
+    ok: true,
+    iniciado_em: INICIADO_EM,
+    uptime_segundos: Math.round(process.uptime()),
+    memoria_mb: Math.round(process.memoryUsage().rss / 1048576),
+    node: process.version,
+    ambiente: process.env.NODE_ENV || "development",
+    banco,
+    mercado_pago: pagamento.mp,
+    timeout_mp_ms: pagamento.timeout_ms,
+    total_ms: Date.now() - t0,
+  });
+});
 
 /**
  * "Já paguei" — consulta o Mercado Pago na hora, sem esperar o webhook
